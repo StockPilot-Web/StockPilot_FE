@@ -200,7 +200,7 @@ export function OpsSettingsHistoryPanel() {
             ))}
           </select>
         }
-        bodyClassName="overflow-x-auto"
+        bodyClassName="overflow-x-auto relative"
         footer={
           pagination &&
           pagination.totalPages > 1 && (

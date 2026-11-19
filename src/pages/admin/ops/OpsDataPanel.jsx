@@ -62,7 +62,7 @@ export function OpsDataPanel() {
           (d?.cutoff ? t(` (trước ${formatVNDateTime(d.cutoff)})`, ` (before ${formatVNDateTime(d.cutoff)})`) : '')
         }
         actions={agePicker}
-        bodyClassName="overflow-x-auto"
+        bodyClassName="overflow-x-auto relative"
       >
         <table className={ui.table}>
           <thead>
@@ -101,7 +101,7 @@ export function OpsDataPanel() {
         </table>
       </PanelCard>
 
-      <PanelCard icon={Database} title={t('Bảng lớn nhất trong cơ sở dữ liệu', 'Largest database tables')} bodyClassName="overflow-x-auto">
+      <PanelCard icon={Database} title={t('Bảng lớn nhất trong cơ sở dữ liệu', 'Largest database tables')} bodyClassName="overflow-x-auto relative">
         {!report.loading && !d?.largestTables?.length ? (
           <p className="px-5 py-6 text-[13px] text-slate-500">
             {t(

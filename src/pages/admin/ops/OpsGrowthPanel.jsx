@@ -135,7 +135,7 @@ export function OpsGrowthPanel() {
         icon={Moon}
         title={t(`Cửa hàng "ngủ đông" — không có đơn trong ${dormantDays} ngày`, `Dormant stores — no orders in ${dormantDays} days`)}
         actions={<span className="text-[12px] text-slate-500 tabular-nums">{t(`${formatNumber(d?.dormant?.count)} cửa hàng`, `${formatNumber(d?.dormant?.count)} stores`)}</span>}
-        bodyClassName="overflow-x-auto"
+        bodyClassName="overflow-x-auto relative"
       >
         {!growth.loading && !d?.dormant?.items?.length ? (
           <EmptyState

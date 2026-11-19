@@ -97,7 +97,7 @@ export function OpsSupportSlaPanel() {
         />
       </PanelCard>
 
-      <PanelCard icon={Layers} title={t('Theo mức ưu tiên', 'By priority')} bodyClassName="overflow-x-auto">
+      <PanelCard icon={Layers} title={t('Theo mức ưu tiên', 'By priority')} bodyClassName="overflow-x-auto relative">
         <table className={ui.table}>
           <thead>
             <tr>
@@ -136,7 +136,7 @@ export function OpsSupportSlaPanel() {
         icon={AlarmClock}
         title={t('Ticket chưa phản hồi đã quá hạn', 'Overdue tickets awaiting a reply')}
         actions={d?.overdue?.count > 0 && <Badge tone="danger">{formatNumber(d.overdue.count)} ticket</Badge>}
-        bodyClassName="overflow-x-auto"
+        bodyClassName="overflow-x-auto relative"
       >
         {!sla.loading && !d?.overdue?.items?.length ? (
           <EmptyState

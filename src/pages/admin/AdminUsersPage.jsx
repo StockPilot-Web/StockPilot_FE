@@ -180,7 +180,7 @@ function PermissionMatrix() {
               <p className="text-[12px] text-slate-500 mt-0.5">{t(group.description, group.descriptionEn)}</p>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto relative">
               <table className={ui.table}>
                 <thead>
                   <tr>

@@ -211,7 +211,7 @@ function AuditDiffViewer({ log }) {
             [t('Dữ liệu trước', 'Before'), beforeObj],
             [t('Dữ liệu sau', 'After'), afterObj],
           ].map(([label, obj]) => (
-            <div key={label} className="p-3.5 bg-white border border-slate-200 rounded-xl overflow-x-auto ">
+            <div key={label} className="p-3.5 bg-white border border-slate-200 rounded-xl overflow-x-auto relative">
               <span className="text-[11px] font-sans font-semibold text-slate-500 uppercase tracking-wider block mb-2">
                 {label}
               </span>

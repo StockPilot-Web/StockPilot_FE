@@ -73,7 +73,7 @@ export function OpsPaymentsPanel() {
         />
       </PanelCard>
 
-      <PanelCard title={t('Theo cửa hàng', 'By store')} bodyClassName="overflow-x-auto">
+      <PanelCard title={t('Theo cửa hàng', 'By store')} bodyClassName="overflow-x-auto relative">
         {health.error ? (
           <ErrorState message={health.error} onRetry={health.reload} />
         ) : !health.loading && !data?.items?.length ? (
