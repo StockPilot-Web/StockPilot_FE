@@ -16,7 +16,7 @@ import { adminStyles as ui } from './adminStyles';
 import { Badge } from './components/AdminUI';
 import { useAdminText } from './useAdminText';
 
-function Switch({ checked, onChange, label, disabled }) {
+export function Switch({ checked, onChange, label, disabled }) {
   return (
     <button
       type="button"

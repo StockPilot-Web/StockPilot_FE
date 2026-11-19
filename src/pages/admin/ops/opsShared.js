@@ -83,6 +83,8 @@ const SETTING_VI = {
   'ops.security.loginLockout': 'Khóa đăng nhập tạm thời',
   'ops.support.firstResponseSlaHours': 'SLA phản hồi ticket',
   'ops.payments.pendingAlertMinutes': 'Ngưỡng giao dịch treo',
+  'ops.signup.blockedEmailDomains': 'Tên miền email bị chặn khi đăng ký',
+  'ops.signup.emailAllowlist': 'Chỉ cho đăng ký bằng tên miền được phép',
 };
 const SETTING_EN = {
   'signup.enabled': 'Allow store self sign-up',
@@ -92,6 +94,8 @@ const SETTING_EN = {
   'ops.security.loginLockout': 'Temporary login lockout',
   'ops.support.firstResponseSlaHours': 'Ticket response SLA',
   'ops.payments.pendingAlertMinutes': 'Stuck payment threshold',
+  'ops.signup.blockedEmailDomains': 'Blocked sign-up e-mail domains',
+  'ops.signup.emailAllowlist': 'Sign-up e-mail allow list',
 };
 export const settingLabel = (key) => (en() ? SETTING_EN : SETTING_VI)[key] || key;
 /** Danh sách khóa cài đặt (giá trị là nhãn tiếng Việt; dùng settingLabel() để hiển thị song ngữ). */
@@ -111,6 +115,8 @@ export function formatSettingValue(key, value) {
     return E
       ? `High ${value.HIGH}h · Normal ${value.NORMAL}h · Low ${value.LOW}h`
       : `Cao ${value.HIGH}h · TB ${value.NORMAL}h · Thấp ${value.LOW}h`;
+  if (key === 'ops.signup.blockedEmailDomains') return value.length ? value.join(', ') : (E ? 'None' : 'Không có');
+  if (key === 'ops.signup.emailAllowlist') return value.enabled ? `${ON}: ${value.domains.join(', ')}` : OFF;
   if (key === 'ops.payments.pendingAlertMinutes') return `${value} ${E ? 'min' : 'phút'}`;
   if (key === 'ai.dailyQuotaPerStore') return value === 0 ? (E ? 'Unlimited' : 'Không giới hạn') : `${value} ${E ? 'requests' : 'lượt'}`;
   return typeof value === 'object' ? JSON.stringify(value) : String(value);

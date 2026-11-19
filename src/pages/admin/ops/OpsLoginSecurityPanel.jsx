@@ -109,7 +109,7 @@ export function OpsLoginSecurityPanel() {
         />
       </PanelCard>
 
-      <PanelCard icon={UserX} title={t('Tài khoản bị nhập sai nhiều nhất', 'Most-failed accounts')} bodyClassName="overflow-x-auto">
+      <PanelCard icon={UserX} title={t('Tài khoản bị nhập sai nhiều nhất', 'Most-failed accounts')} bodyClassName="overflow-x-auto relative">
         {!report.loading && !d?.byAccount?.length ? (
           <EmptyState
             title={t('Không có lượt đăng nhập sai', 'No failed sign-ins')}
@@ -173,7 +173,7 @@ export function OpsLoginSecurityPanel() {
         )}
       </PanelCard>
 
-      <PanelCard icon={Globe} title={t('Địa chỉ IP nhập sai nhiều nhất', 'Most-failing IP addresses')} bodyClassName="overflow-x-auto">
+      <PanelCard icon={Globe} title={t('Địa chỉ IP nhập sai nhiều nhất', 'Most-failing IP addresses')} bodyClassName="overflow-x-auto relative">
         {!report.loading && !d?.byIp?.length ? (
           <EmptyState title={t('Chưa có dữ liệu', 'No data yet')} />
         ) : (

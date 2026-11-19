@@ -16,6 +16,7 @@ import {
   Laptop,
   ExternalLink,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
@@ -68,6 +69,7 @@ import {
   useDebounced,
 } from './components/AdminUI';
 import { useAdminText } from './useAdminText';
+import { PurgeStoresDialog } from './components/PurgeStoresDialog';
 
 const ROLE_OPTIONS = [
   { value: '', vi: 'Mọi vai trò', en: 'All roles' },
@@ -579,6 +581,10 @@ export function AdminUsersPage() {
 
   const isSelf = (u) => u?.id === me?.id;
   const bulkTargets = sortedRows.filter((u) => selectedIds.includes(u.id) && !isSelf(u));
+  // Xóa cửa hàng: chỉ tính chủ cửa hàng có cửa hàng; loại trùng (nhiều chủ cùng một cửa hàng).
+  const selectedRows = sortedRows.filter((u) => selectedIds.includes(u.id));
+  const ownersWithStore = selectedRows.filter((u) => u.role === 'SHOP_OWNER' && u.storeId);
+  const purgeStoreIds = [...new Set(ownersWithStore.map((u) => u.storeId))];
 
   /** Thu hồi phiên lần lượt từng người (bỏ qua chính mình); backend ghi nhật ký cho từng lượt. */
   const bulkRevoke = async ({ reason }) => {
@@ -857,6 +863,13 @@ export function AdminUsersPage() {
                 disabled: bulkTargets.length === 0,
                 onClick: () => setDialog({ type: 'bulkRevoke' }),
               },
+              {
+                label: t(`Xóa cửa hàng của ${ownersWithStore.length} người`, `Delete the stores of ${ownersWithStore.length} users`),
+                icon: Trash2,
+                danger: true,
+                disabled: purgeStoreIds.length === 0,
+                onClick: () => setDialog({ type: 'purge' }),
+              },
             ]}
           />
         </>
@@ -1125,6 +1138,25 @@ export function AdminUsersPage() {
             } catch (err) {
               toast({ type: 'error', title: t('Không thực hiện được', 'Action failed'), description: apiErrorMessage(err) });
             }
+          }}
+        />
+      )}
+
+      {dialog?.type === 'purge' && (
+        <PurgeStoresDialog
+          storeIds={purgeStoreIds}
+          context={t(
+            `Đã chọn ${selectedRows.length} người · ${ownersWithStore.length} chủ cửa hàng có cửa hàng · ${purgeStoreIds.length} cửa hàng sẽ được kiểm tra (đã loại trùng).${
+              selectedRows.length > ownersWithStore.length ? ` ${selectedRows.length - ownersWithStore.length} người không phải chủ cửa hàng được bỏ qua.` : ''
+            }`,
+            `${selectedRows.length} selected · ${ownersWithStore.length} store owners with a store · ${purgeStoreIds.length} stores to check (de-duplicated).${
+              selectedRows.length > ownersWithStore.length ? ` ${selectedRows.length - ownersWithStore.length} non-owners ignored.` : ''
+            }`
+          )}
+          onClose={() => setDialog(null)}
+          onDone={() => {
+            setSelectedIds([]);
+            load();
           }}
         />
       )}

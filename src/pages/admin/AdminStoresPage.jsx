@@ -17,6 +17,7 @@ import {
   Clock,
   Warehouse,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import { useToast } from '../../components/common/Toast';
 import {
@@ -55,6 +56,7 @@ import {
   useDebounced,
 } from './components/AdminUI';
 import { useAdminText } from './useAdminText';
+import { PurgeStoresDialog } from './components/PurgeStoresDialog';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -379,6 +381,7 @@ export function AdminStoresPage() {
     st.isActive
       ? { label: t('Tạm khóa cửa hàng', 'Suspend store'), icon: Lock, onClick: () => setDialog({ type: 'lock', store: st }), danger: true }
       : { label: t('Mở lại cửa hàng', 'Reactivate store'), icon: Unlock, onClick: () => setDialog({ type: 'unlock', store: st }) },
+    { label: t('Xóa vĩnh viễn', 'Delete permanently'), icon: Trash2, onClick: () => setDialog({ type: 'purge', storeIds: [st.id] }), danger: true },
   ].filter(Boolean);
 
   const chips = [
@@ -671,6 +674,13 @@ export function AdminStoresPage() {
             disabled: selectedActive.length === 0,
             onClick: () => setDialog({ type: 'bulkLock' }),
           },
+          {
+            label: t(`Xóa vĩnh viễn ${selectedIds.length} cửa hàng`, `Delete ${selectedIds.length} stores permanently`),
+            icon: Trash2,
+            danger: true,
+            disabled: selectedIds.length === 0,
+            onClick: () => setDialog({ type: 'purge', storeIds: [...new Set(selectedIds)] }),
+          },
         ]}
       />
 
@@ -910,6 +920,19 @@ export function AdminStoresPage() {
             } catch (err) {
               toast({ type: 'error', title: t('Không cập nhật được trạng thái', 'Could not update the status'), description: apiErrorMessage(err) });
             }
+          }}
+        />
+      )}
+
+      {dialog?.type === 'purge' && (
+        <PurgeStoresDialog
+          storeIds={dialog.storeIds}
+          onClose={() => setDialog(null)}
+          onDone={(result) => {
+            const removed = new Set((result?.results || []).filter((r) => r.status === 'DELETED').map((r) => r.storeId));
+            setSelectedIds((prev) => prev.filter((id) => !removed.has(id)));
+            if (detailId && removed.has(detailId)) setDetailId(null);
+            load();
           }}
         />
       )}

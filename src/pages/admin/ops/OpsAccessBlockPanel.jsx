@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, Ban, Cpu, Globe, MonitorSmartphone, ShieldBan, UserPlus } from 'lucide-react';
+import { Activity, AtSign, Ban, Cpu, Globe, MonitorSmartphone, ShieldBan, UserPlus } from 'lucide-react';
 import { useToast } from '../../../components/common/Toast';
 import { formatVNDateTime } from '../../../services/adminService';
 import {
@@ -17,6 +17,8 @@ import { adminStyles as ui } from '../adminStyles';
 import { Badge, ConfirmDialog, EmptyState, ErrorState, PanelCard, TableBody, Td, Th } from '../components/AdminUI';
 import { useAdminText } from '../useAdminText';
 import { formatNumber, segmentedButton, segmentedWrapper, useOpsData } from './opsShared';
+import { apiGetSignupEmailPolicy } from '../../../services/adminOpsService';
+import { EmailDomainPolicyCard, SignupToggleCard, addBlockedEmailDomain, domainMatches, emailDomainOf } from './OpsSignupPolicyCards';
 
 const KINDS = [
   { value: 'IP', icon: Globe, vi: 'Địa chỉ IP', en: 'IP address' },
@@ -70,6 +72,28 @@ export function OpsAccessBlockPanel() {
   const [pendingBlock, setPendingBlock] = useState(null); // { kind, value, hours, context }
   const [pendingUnblock, setPendingUnblock] = useState(null); // { kind, id, value }
   const [myFingerprint, setMyFingerprint] = useState(null);
+  const [pendingDomain, setPendingDomain] = useState(null);
+  const [policyReload, setPolicyReload] = useState(0);
+  const emailPolicy = useOpsData(() => apiGetSignupEmailPolicy(), [policyReload]);
+  const isDomainBlocked = (domain) => {
+    const p = emailPolicy.data;
+    if (!p || !domain) return false;
+    return [...p.builtInBlocked, ...p.envBlocked, ...p.adminBlocked].some((rule) => domainMatches(domain, rule));
+  };
+  const blockDomain = async () => {
+    try {
+      await addBlockedEmailDomain(pendingDomain);
+      toast({
+        type: 'success',
+        title: t(`Đã chặn tên miền ${pendingDomain}`, `Blocked ${pendingDomain}`),
+        description: t('Chỉ áp dụng cho lượt đăng ký mới.', 'Applies to new sign-ups only.'),
+      });
+      setPendingDomain(null);
+      setPolicyReload((x) => x + 1);
+    } catch (err) {
+      toast({ type: 'error', title: t('Không chặn được tên miền', 'Could not block the domain'), description: apiErrorMessage(err) });
+    }
+  };
 
   useEffect(() => {
     getDeviceFingerprint().then(setMyFingerprint);
@@ -153,6 +177,8 @@ export function OpsAccessBlockPanel() {
 
   return (
     <div className="space-y-4">
+      <SignupToggleCard />
+
       {/* ── Chặn mới ───────────────────────────────────────────── */}
       <PanelCard
         icon={ShieldBan}
@@ -302,6 +328,8 @@ export function OpsAccessBlockPanel() {
         )}
       </PanelCard>
 
+      <EmailDomainPolicyCard reloadKey={policyReload} onChanged={emailPolicy.reload} />
+
       {/* ── Đăng ký gần đây ───────────────────────────────────── */}
       <PanelCard
         icon={UserPlus}
@@ -367,6 +395,16 @@ export function OpsAccessBlockPanel() {
                       {quickButton('IP', s.ipAddress, 'IP', 'signup')}
                       {quickButton('DEVICE', s.deviceId, t('Thiết bị', 'Device'), 'signup')}
                       {quickButton('FINGERPRINT', s.fingerprint, t('Vân tay', 'Fingerprint'), 'signup')}
+                      {emailDomainOf(s.user?.email) && !isDomainBlocked(emailDomainOf(s.user?.email)) && emailPolicy.data && (
+                        <button
+                          type="button"
+                          className={`${ui.btnSecondary} h-7 px-2 text-[12px]`}
+                          onClick={() => setPendingDomain(emailDomainOf(s.user.email))}
+                          title={t('Chặn tên miền email này', 'Block this e-mail domain')}
+                        >
+                          <AtSign className="w-3.5 h-3.5" aria-hidden="true" /> {t('Tên miền', 'Domain')}
+                        </button>
+                      )}
                     </div>
                   </Td>
                 </tr>
@@ -444,6 +482,20 @@ export function OpsAccessBlockPanel() {
           reason={{ required: true, minLength: 3, placeholder: t('Ví dụ: Tạo hàng loạt cửa hàng rác bằng email @mailinator.com', 'e.g. Mass-created junk stores with @mailinator.com e-mails') }}
           onConfirm={submitBlock}
           onClose={() => setPendingBlock(null)}
+        />
+      )}
+
+      {pendingDomain && (
+        <ConfirmDialog
+          danger
+          title={t(`Chặn tên miền email ${pendingDomain}?`, `Block the e-mail domain ${pendingDomain}?`)}
+          description={t(
+            `Email @${pendingDomain} và mọi tên miền con sẽ không dùng được để đăng ký mới. Không xóa hay khóa tài khoản đang có.`,
+            `@${pendingDomain} and its subdomains can no longer be used for new sign-ups. Existing accounts are not deleted or locked.`
+          )}
+          confirmLabel={t('Chặn tên miền email này', 'Block this e-mail domain')}
+          onConfirm={blockDomain}
+          onClose={() => setPendingDomain(null)}
         />
       )}
 

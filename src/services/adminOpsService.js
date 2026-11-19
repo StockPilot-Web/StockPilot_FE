@@ -64,3 +64,9 @@ export const apiGetDeviceBlocks = () => get('/admin/ops/security/device-blocks')
 export const apiBlockDevice = (payload) => post('/admin/ops/security/device-blocks', payload);
 export const apiUnblockDevice = (id, reason) => del(`/admin/ops/security/device-blocks/${id}`, { reason });
 export const apiGetIpActivity = (params) => get('/admin/ops/security/ip-activity', params);
+
+// ─── Xóa cửa hàng rác (dryRun = xem trước, không cần mật khẩu) ───────────
+export const apiPurgeStores = (payload) => post('/admin/ops/stores/purge', payload);
+
+// ─── Chính sách email đăng ký ────────────────────────────────────────────
+export const apiGetSignupEmailPolicy = () => get('/admin/ops/security/signup-email-policy');
