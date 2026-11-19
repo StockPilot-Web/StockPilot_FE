@@ -54,3 +54,13 @@ export const apiEnableTwoFactor = (code) => post('/admin/ops/2fa/enable', { code
 export const apiDisableTwoFactor = (actorPassword, code) => post('/admin/ops/2fa/disable', { actorPassword, code });
 export const apiResetTwoFactor = (userId, actorPassword, reason) =>
   post(`/admin/ops/2fa/users/${userId}/reset`, { actorPassword, reason });
+
+// ─── Chặn IP & thiết bị (sự cố 2026-11-19) ───────────────────────────────
+const del = async (url, body) => (await apiClient.delete(url, { data: body })).data.data;
+export const apiGetIpBlocks = () => get('/admin/ops/security/ip-blocks');
+export const apiBlockIp = (payload) => post('/admin/ops/security/ip-blocks', payload);
+export const apiUnblockIp = (id, reason) => del(`/admin/ops/security/ip-blocks/${id}`, { reason });
+export const apiGetDeviceBlocks = () => get('/admin/ops/security/device-blocks');
+export const apiBlockDevice = (payload) => post('/admin/ops/security/device-blocks', payload);
+export const apiUnblockDevice = (id, reason) => del(`/admin/ops/security/device-blocks/${id}`, { reason });
+export const apiGetIpActivity = (params) => get('/admin/ops/security/ip-activity', params);

@@ -4,12 +4,14 @@ import { adminStyles as ui } from './adminStyles';
 import { PageHeader, Tabs } from './components/AdminUI';
 import { useAdminText } from './useAdminText';
 import { OpsLoginSecurityPanel } from './ops/OpsLoginSecurityPanel';
+import { OpsAccessBlockPanel } from './ops/OpsAccessBlockPanel';
 import { OpsTwoFactorPanel } from './ops/OpsTwoFactorPanel';
 import { OpsOwnerTransferPanel } from './ops/OpsOwnerTransferPanel';
 import { OpsAnnouncementPanel } from './ops/OpsAnnouncementPanel';
 import { OpsSettingsHistoryPanel } from './ops/OpsSettingsHistoryPanel';
 
 const TABS = [
+  { value: 'blocks', vi: 'Chặn IP & thiết bị', en: 'IP & device blocks' },
   { value: 'login', vi: 'Đăng nhập bất thường', en: 'Suspicious logins' },
   { value: '2fa', vi: 'Xác thực 2 lớp', en: 'Two-factor auth' },
   { value: 'owner', vi: 'Chuyển chủ cửa hàng', en: 'Owner transfer' },
@@ -18,6 +20,7 @@ const TABS = [
 ];
 
 const PANELS = {
+  blocks: OpsAccessBlockPanel,
   login: OpsLoginSecurityPanel,
   '2fa': OpsTwoFactorPanel,
   owner: OpsOwnerTransferPanel,
@@ -28,7 +31,7 @@ const PANELS = {
 /** /admin/security — các thao tác bảo mật và kiểm soát nhạy cảm của quản trị viên. Mọi thao tác ghi đều vào nhật ký kiểm toán. */
 export function AdminSecurityPage() {
   const [params, setParams] = useSearchParams();
-  const tab = PANELS[params.get('tab')] ? params.get('tab') : 'login';
+  const tab = PANELS[params.get('tab')] ? params.get('tab') : 'blocks';
   const Panel = PANELS[tab];
   const { t } = useAdminText();
 
@@ -37,8 +40,8 @@ export function AdminSecurityPage() {
       <PageHeader
         title={t('Bảo mật & Kiểm soát', 'Security & controls')}
         description={t(
-          'Phát hiện dò mật khẩu, xác thực 2 lớp, chuyển quyền chủ cửa hàng, gửi thông báo và lịch sử thay đổi cài đặt. Mọi thao tác đều được ghi vào nhật ký kiểm toán.',
-          'Password-guessing detection, two-factor auth, store owner transfer, announcements and settings history. Every action is written to the audit log.'
+          'Chặn IP và thiết bị, phát hiện dò mật khẩu, xác thực 2 lớp, chuyển quyền chủ cửa hàng, gửi thông báo và lịch sử thay đổi cài đặt. Mọi thao tác đều được ghi vào nhật ký kiểm toán.',
+          'IP and device blocking, password-guessing detection, two-factor auth, store owner transfer, announcements and settings history. Every action is written to the audit log.'
         )}
       >
         <Tabs tabs={TABS.map((x) => ({ value: x.value, label: t(x.vi, x.en) }))} value={tab} onChange={(value) => setParams({ tab: value }, { replace: true })} />

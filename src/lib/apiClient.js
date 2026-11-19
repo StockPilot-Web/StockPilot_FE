@@ -3,6 +3,7 @@
  * Pure JavaScript — không dùng TypeScript types.
  */
 import axios from 'axios';
+import { getDeviceHeaders } from './deviceIdentity';
 
 function normalizeApiUrl(raw) {
   // 1. Nếu có VITE_API_URL được truyền vào
@@ -71,6 +72,16 @@ apiClient.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
+// ─── Gắn mã thiết bị + vân tay phần cứng (dùng cho tính năng Admin chặn thiết bị) ───
+apiClient.interceptors.request.use(async (config) => {
+  try {
+    Object.assign(config.headers, await getDeviceHeaders());
+  } catch {
+    // Không lấy được thông tin thiết bị: vẫn gửi request bình thường.
+  }
+  return config;
+});
 
 // ─── Response Interceptor: tự động refresh khi 401 ───
 let refreshPromise = null;
