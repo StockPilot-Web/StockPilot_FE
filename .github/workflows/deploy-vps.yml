@@ -55,7 +55,7 @@ jobs:
           SSH_OPTS=(-p "$VPS_PORT" -o BatchMode=yes -o ServerAliveInterval=30 -o UserKnownHostsFile="$SSH_DIR/known_hosts")
           if [ -n "$VPS_KNOWN_HOSTS" ]; then
             printf '%s\n' "$VPS_KNOWN_HOSTS" | tr -d '\r' > "$SSH_DIR/known_hosts"
-            SSH_OPTS+=(-o StrictHostKeyChecking=yes)
+            SSH_OPTS+=(-o StrictHostKeyChecking=accept-new)
           else
             echo "⚠️ Chưa có secret VPS_KNOWN_HOSTS: chấp nhận host key lần đầu (kém an toàn hơn)."
             SSH_OPTS+=(-o StrictHostKeyChecking=accept-new)
