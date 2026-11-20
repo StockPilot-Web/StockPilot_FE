@@ -36,17 +36,17 @@ export async function apiLogin({ email, password, otpCode }) {
 }
 
 // POST /auth/send-register-otp
-export async function apiSendRegisterOtp({ fullName, email, storeCode }) {
+export async function apiSendRegisterOtp({ fullName, email, storeCode, turnstileToken }) {
   const { data } = await apiClient.post('/auth/send-register-otp', {
-    fullName, email, storeCode,
+    fullName, email, storeCode, turnstileToken,
   });
   return data;
 }
 
 // POST /auth/register
-export async function apiRegister({ fullName, email, password, storeName, storeCode, phone, address, otp }) {
+export async function apiRegister({ fullName, email, password, storeName, storeCode, phone, address, otp, turnstileToken }) {
   const { data } = await apiClient.post('/auth/register', {
-    fullName, email, password, storeName, storeCode, phone, address, otp,
+    fullName, email, password, storeName, storeCode, phone, address, otp, turnstileToken,
   });
   const raw = data.data;
   return {

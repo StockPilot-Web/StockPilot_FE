@@ -10,6 +10,7 @@ import {
 import { useAuthStore } from '../../components/store/authStore';
 import { useToast } from '../../components/common/Toast';
 import { useTranslation } from '../../i18n/useTranslation';
+import { TurnstileWidget } from '../../components/common/TurnstileWidget';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -442,6 +443,8 @@ export function RegisterPage() {
   const [step, setStep] = useState(1); // 1 | 2
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef(null);
 
   // Admin "Tạo cửa hàng" from a lead opens /register?fullName&phone&email&storeName to prefill the form.
   const [searchParams] = useSearchParams();
@@ -581,12 +584,23 @@ export function RegisterPage() {
     }
   };
 
-  // Bước 1: Khi bấm "Đăng ký" -> Kiểm tra form và Gửi OTP về Email
+  // Bước 1: Khi bấm "Đăng ký" -> Kiểm tra form, xác thực CAPTCHA và Gửi OTP về Email
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
     const errs = validateStep2();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
+      return;
+    }
+
+    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken) {
+      toast({
+        type: 'error',
+        title: isEn ? 'Security Check Required' : 'Yêu cầu xác thực bảo mật',
+        message: isEn
+          ? 'Please complete the Cloudflare CAPTCHA check before proceeding.'
+          : 'Vui lòng xác nhận bạn không phải là người máy (CAPTCHA) trước khi tiếp tục.',
+      });
       return;
     }
 
@@ -597,6 +611,7 @@ export function RegisterPage() {
         fullName: form.name.trim(),
         email: form.email.trim(),
         storeCode: form.storeSlug.trim(),
+        turnstileToken,
       });
 
       setIsLoading(false);
@@ -621,6 +636,9 @@ export function RegisterPage() {
         message: msg,
       });
       setIsLoading(false);
+      // Reset CAPTCHA widget nếu token hết hạn hoặc không hợp lệ
+      turnstileRef.current?.reset();
+      setTurnstileToken('');
     }
   };
 
@@ -681,6 +699,7 @@ export function RegisterPage() {
         phone: form.phone || undefined,
         address: form.storeAddress || undefined,
         otp: enteredCode,
+        turnstileToken: turnstileToken || undefined,
       });
 
       // Tự động đăng nhập sau khi đăng ký thành công
@@ -871,6 +890,17 @@ export function RegisterPage() {
             {step === 2 && (
               <form onSubmit={handleFinalSubmit} className="space-y-5" autoComplete="off">
                 <StepStore form={form} errors={errors} onChange={onChange} isEn={isEn} />
+
+                {/* Cloudflare Turnstile CAPTCHA Protection */}
+                <div className="pt-2 pb-1 flex justify-center">
+                  <TurnstileWidget
+                    ref={turnstileRef}
+                    onVerify={(token) => setTurnstileToken(token)}
+                    onExpire={() => setTurnstileToken('')}
+                    onError={() => setTurnstileToken('')}
+                    theme="light"
+                  />
+                </div>
 
                 <div className="flex gap-3">
                   <button
