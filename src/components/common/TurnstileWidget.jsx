@@ -106,6 +106,9 @@ export const TurnstileWidget = forwardRef(function TurnstileWidget(
           } catch (_) {}
           widgetIdRef.current = null;
         }
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
+        }
 
         try {
           widgetIdRef.current = turnstile.render(containerRef.current, {
@@ -190,3 +193,4 @@ export const TurnstileWidget = forwardRef(function TurnstileWidget(
     </div>
   );
 });
+
