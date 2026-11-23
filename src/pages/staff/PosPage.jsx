@@ -1700,13 +1700,6 @@ export function PosPage() {
                           e.target.src = "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=200&h=200&fit=crop";
                         }}
                       />
-                      {isOutOfStock && (
-                        <div className="absolute bottom-0 inset-x-0 bg-red-600/90 py-0.5 flex items-center justify-center z-10">
-                          <span className="text-white text-[7.5px] sm:text-[8px] font-bold tracking-tight uppercase text-center leading-none">
-                            {isEn ? 'Out of stock' : 'Hết hàng'}
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Product Info on the Right */}
