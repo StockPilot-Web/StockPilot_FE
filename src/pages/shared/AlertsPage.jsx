@@ -98,16 +98,16 @@ function cleanAlertText(str, isEn) {
     .replace(/\(Z-Score:\s*([^)]+)\)/gi, isEn ? '(Z-Score std dev: $1)' : '(Độ lệch chuẩn Z: $1)');
   if (isEn) {
     res = res
-      .replace(/^(Cảnh báo hết hàng|Hết hàng):\s*/i, 'Stockout Alert: ')
+      .replace(/^(Cảnh báo hết hàng|Hết hàng):\s*/i, 'Out of Stock: ')
       .replace(/^(Cảnh báo thừa hàng|Thừa hàng):\s*/i, 'Overstock Alert: ')
       .replace(/^(Cảnh báo tồn kho thấp|Tồn kho thấp|Tồn thấp):\s*/i, 'Low Stock Alert: ')
       .replace(/^(Cảnh báo bán chậm|Bán chậm):\s*/i, 'Slow-Moving Alert: ')
       .replace(/^(Cảnh báo hàng ứ đọng|Hàng ứ đọng):\s*/i, 'Dead Stock Alert: ')
       .replace(/^(Cảnh báo biến động nhu cầu|Biến động nhu cầu):\s*/i, 'Unusual Demand Alert: ')
-      .replace(/Sản phẩm (\S+) hiện có sẵn (\d+) (?:sản phẩm|đơn vị) trong kho\.\s*Cần nhập hàng khẩn cấp\./i, 'Product $1 currently has $2 units in stock. Urgent replenishment required.')
-      .replace(/Sản phẩm (\S+) có mức tồn kho vượt ngưỡng an toàn so với tốc độ tiêu thụ hiện tại\./i, 'Product $1 stock level exceeds safe threshold relative to current sales velocity.')
-      .replace(/Sản phẩm (\S+) chỉ còn (\d+) đơn vị khả dụng, dưới điểm đặt hàng (\d+)\./i, 'Product $1 has only $2 available units left, below the reorder point of $3.')
-      .replace(/Sản phẩm (\S+) đã hết hàng hoàn toàn trong kho\./i, 'Product $1 is completely out of stock in warehouse.');
+      .replace(/Sản phẩm (\S+)\s+hiện có sẵn\s+(\d+)\s+(?:sản phẩm|đơn vị)?\s*trong kho[\.\s]*Cần nhập hàng khẩn cấp\.?/i, 'Product $1 currently has $2 units in stock. Urgent replenishment required.')
+      .replace(/Sản phẩm (\S+)\s+có mức tồn kho vượt ngưỡng an toàn so với tốc độ tiêu thụ hiện tại\.?/i, 'Product $1 stock level exceeds safe threshold relative to current sales velocity.')
+      .replace(/Sản phẩm (\S+)\s+chỉ còn\s+(\d+)\s+đơn vị khả dụng,\s*dưới điểm đặt hàng\s+(\d+)\.?/i, 'Product $1 has only $2 available units left, below the reorder point of $3.')
+      .replace(/Sản phẩm (\S+)\s+đã hết hàng hoàn toàn trong kho\.?/i, 'Product $1 is completely out of stock in warehouse.');
   }
   return res;
 }

@@ -187,31 +187,31 @@ export function AddProduct({ onBack }) {
 
   const validate = () => {
     const errs = {};
-    if (!form.name.trim()) errs.name = "Vui lòng nhập tên sản phẩm";
+    if (!form.name.trim()) errs.name = isEn ? "Please enter product name" : "Vui lòng nhập tên sản phẩm";
 
     // Kiểm tra mã sản phẩm (chỉ được phép SP kèm số)
     const cleanSku = (form.sku || "").trim().toUpperCase();
     if (!cleanSku) {
-      errs.sku = "Vui lòng nhập mã sản phẩm";
+      errs.sku = isEn ? "Please enter product code" : "Vui lòng nhập mã sản phẩm";
     } else if (!/^SP[0-9]+$/.test(cleanSku)) {
-      errs.sku = "Mã sản phẩm chỉ được có định dạng SP kèm số (VD: SP1, SP2...)";
+      errs.sku = isEn ? "Product code must follow format SP + number (e.g. SP1, SP2...)" : "Mã sản phẩm chỉ được có định dạng SP kèm số (VD: SP1, SP2...)";
     } else if (existingCodes.has(cleanSku)) {
-      errs.sku = `Mã sản phẩm "${cleanSku}" đã được gắn với sản phẩm khác. Vui lòng chọn mã khác!`;
+      errs.sku = isEn ? `Product code "${cleanSku}" already exists. Please choose another code!` : `Mã sản phẩm "${cleanSku}" đã được gắn với sản phẩm khác. Vui lòng chọn mã khác!`;
     }
 
     // Kiểm tra mã vạch (Barcode)
     const cleanBarcode = (form.barcode || "").trim();
     if (cleanBarcode && existingBarcodes.has(cleanBarcode)) {
-      errs.barcode = `Mã vạch "${cleanBarcode}" đã được gán cho sản phẩm "${existingBarcodes.get(cleanBarcode)}". Vui lòng nhập mã vạch khác!`;
+      errs.barcode = isEn ? `Barcode "${cleanBarcode}" already assigned to "${existingBarcodes.get(cleanBarcode)}". Please enter another barcode!` : `Mã vạch "${cleanBarcode}" đã được gán cho sản phẩm "${existingBarcodes.get(cleanBarcode)}". Vui lòng nhập mã vạch khác!`;
     }
 
-    if (!form.category) errs.category = "Vui lòng chọn danh mục";
-    if (!form.costPrice) errs.costPrice = "Vui lòng nhập giá nhập";
-    if (!form.salePrice) errs.salePrice = "Vui lòng nhập giá bán";
+    if (!form.category) errs.category = isEn ? "Please select a category" : "Vui lòng chọn danh mục";
+    if (!form.costPrice) errs.costPrice = isEn ? "Please enter cost price" : "Vui lòng nhập giá nhập";
+    if (!form.salePrice) errs.salePrice = isEn ? "Please enter selling price" : "Vui lòng nhập giá bán";
     if (form.costPrice && form.salePrice && parseInt(form.salePrice) < parseInt(form.costPrice)) {
-      errs.salePrice = "Giá bán không được thấp hơn giá nhập";
+      errs.salePrice = isEn ? "Selling price cannot be lower than cost price" : "Giá bán không được thấp hơn giá nhập";
     }
-    if (!form.stock) errs.stock = "Vui lòng nhập số lượng tồn kho";
+    if (!form.stock) errs.stock = isEn ? "Please enter stock quantity" : "Vui lòng nhập số lượng tồn kho";
     return errs;
   };
 
@@ -225,17 +225,17 @@ export function AddProduct({ onBack }) {
 
     const cleanSku = form.sku.trim().toUpperCase();
     if (!/^SP[0-9]+$/.test(cleanSku)) {
-      setErrors({ sku: "Mã sản phẩm chỉ được có định dạng SP kèm số (VD: SP1, SP2...)" });
+      setErrors({ sku: isEn ? "Product code must follow format SP + number (e.g. SP1, SP2...)" : "Mã sản phẩm chỉ được có định dạng SP kèm số (VD: SP1, SP2...)" });
       return;
     }
     if (existingCodes.has(cleanSku)) {
-      setErrors({ sku: `Mã sản phẩm "${cleanSku}" đã được gắn với sản phẩm khác. Vui lòng chọn mã khác!` });
+      setErrors({ sku: isEn ? `Product code "${cleanSku}" already exists. Please choose another code!` : `Mã sản phẩm "${cleanSku}" đã được gắn với sản phẩm khác. Vui lòng chọn mã khác!` });
       return;
     }
 
     const cleanBarcode = (form.barcode || "").trim();
     if (cleanBarcode && existingBarcodes.has(cleanBarcode)) {
-      setErrors({ barcode: `Mã vạch "${cleanBarcode}" đã được gán cho sản phẩm "${existingBarcodes.get(cleanBarcode)}". Vui lòng chọn mã vạch khác!` });
+      setErrors({ barcode: isEn ? `Barcode "${cleanBarcode}" already assigned to "${existingBarcodes.get(cleanBarcode)}". Please enter another barcode!` : `Mã vạch "${cleanBarcode}" đã được gán cho sản phẩm "${existingBarcodes.get(cleanBarcode)}". Vui lòng chọn mã vạch khác!` });
       return;
     }
 
@@ -291,9 +291,9 @@ export function AddProduct({ onBack }) {
         <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-xs">
           <CheckCircle2 className="w-9 h-9" />
         </div>
-        <h2 className="text-2xl font-black text-slate-800">Thêm sản phẩm thành công!</h2>
+        <h2 className="text-2xl font-black text-slate-800">{isEn ? "Product added successfully!" : "Thêm sản phẩm thành công!"}</h2>
         <p className="text-sm text-slate-500 max-w-md">
-          Sản phẩm <span className="font-bold text-blue-700">{form.name}</span> (mã: <span className="font-mono font-bold text-emerald-700">{form.sku}</span>) đã được lưu vào kho hàng và sẵn sàng kinh doanh.
+          {isEn ? <>Product <span className="font-bold text-blue-700">{form.name}</span> (SKU: <span className="font-mono font-bold text-emerald-700">{form.sku}</span>) has been saved and is ready for business.</> : <>Sản phẩm <span className="font-bold text-blue-700">{form.name}</span> (mã: <span className="font-mono font-bold text-emerald-700">{form.sku}</span>) đã được lưu vào kho hàng và sẵn sàng kinh doanh.</>}
         </p>
 
         {imagePreview && (
@@ -310,14 +310,14 @@ export function AddProduct({ onBack }) {
               onClick={onBack}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-blue-500/20 cursor-pointer flex items-center gap-2"
             >
-              <ArrowLeft className="w-4 h-4" /> Quay lại danh sách sản phẩm
+              <ArrowLeft className="w-4 h-4" /> {isEn ? "Back to product list" : "Quay lại danh sách sản phẩm"}
             </button>
           )}
           <button
             onClick={handleResetForm}
             className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" /> Thêm sản phẩm khác
+            <Plus className="w-4 h-4" /> {isEn ? "Add another product" : "Thêm sản phẩm khác"}
           </button>
         </div>
       </div>

@@ -9,10 +9,52 @@ import { useToast } from '../../components/common/Toast';
 import { useProductStore } from '../../components/store/productStore';
 import { useAlertsStore } from '../../components/store/alertsStore';
 import { apiGetOrders } from '../../services/orderService';
+import { useTranslation } from '../../i18n/useTranslation';
+
+const INITIAL_TASKS = [
+  {
+    id: 1,
+    textVi: 'Chuẩn bị máy quét barcode và kiểm tra giấy in nhiệt tại quầy POS',
+    textEn: 'Prepare barcode scanner and check thermal receipt paper at POS',
+    done: true,
+  },
+  {
+    id: 2,
+    textVi: 'Rà soát các mặt hàng cảnh báo (cận date hoặc sắp hết) để xử lý',
+    textEn: 'Review urgent alerts (expiring or out-of-stock items) for action',
+    done: false,
+  },
+  {
+    id: 3,
+    textVi: 'Bổ sung hàng từ kho lưu trữ lên các kệ trưng bày theo quy chuẩn',
+    textEn: 'Replenish stock from back warehouse onto sales display shelves',
+    done: false,
+  },
+  {
+    id: 4,
+    textVi: 'Xếp hàng hóa nhập mới theo nguyên tắc FIFO (hàng cũ xuất trước)',
+    textEn: 'Organize newly received items following FIFO (oldest batch first)',
+    done: false,
+  },
+  {
+    id: 5,
+    textVi: 'Kiểm đếm chênh lệch tồn thực tế cho nhóm hàng thực phẩm tươi sống',
+    textEn: 'Perform physical count check on perishable and fresh food categories',
+    done: false,
+  },
+  {
+    id: 6,
+    textVi: 'Bàn giao ca và đối soát số lượng đơn hàng hoàn thành cuối ca trực',
+    textEn: 'Hand over shift and reconcile completed orders at end of duty',
+    done: false,
+  },
+];
 
 export function StaffOperationalDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { language } = useTranslation();
+  const isEn = language === 'en';
   const { products, fetchProducts } = useProductStore();
   const { alerts, fetchAlerts } = useAlertsStore();
 
@@ -25,14 +67,7 @@ export function StaffOperationalDashboard() {
   });
 
   // Checklist state saved in local memory
-  const [tasks, setTasks] = useState([
-    { id: 1, text: 'Chuẩn bị máy quét barcode và kiểm tra giấy in nhiệt tại quầy POS', done: true },
-    { id: 2, text: 'Rà soát các mặt hàng cảnh báo (cận date hoặc sắp hết) để xử lý', done: false },
-    { id: 3, text: 'Bổ sung hàng từ kho lưu trữ lên các kệ trưng bày theo quy chuẩn', done: false },
-    { id: 4, text: 'Xếp hàng hóa nhập mới theo nguyên tắc FIFO (hàng cũ xuất trước)', done: false },
-    { id: 5, text: 'Kiểm đếm chênh lệch tồn thực tế cho nhóm hàng thực phẩm tươi sống', done: false },
-    { id: 6, text: 'Bàn giao ca và đối soát số lượng đơn hàng hoàn thành cuối ca trực', done: false },
-  ]);
+  const [tasks, setTasks] = useState(INITIAL_TASKS);
 
   const loadData = async () => {
     try {
@@ -65,7 +100,11 @@ export function StaffOperationalDashboard() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await loadData();
-    toast({ type: 'success', title: 'Đã làm mới', message: 'Số liệu ca trực đã được đồng bộ mới nhất!' });
+    toast({
+      type: 'success',
+      title: isEn ? 'Refreshed' : 'Đã làm mới',
+      message: isEn ? 'Shift metrics synchronized successfully!' : 'Số liệu ca trực đã được đồng bộ mới nhất!',
+    });
   };
 
   const toggleTask = (id) => {
@@ -95,27 +134,27 @@ export function StaffOperationalDashboard() {
       >
         <div className="flex-1 text-center md:text-left space-y-1">
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-600/15 border border-emerald-600/30 text-emerald-900 text-xs font-black uppercase tracking-wider mb-1">
-            Ca trực Vận hành & Thu ngân
+            {isEn ? 'Operations & Cashier Shift' : 'Ca trực Vận hành & Thu ngân'}
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Hệ thống Vận hành Quầy & Kho hàng
+            {isEn ? 'POS & Warehouse Operations' : 'Hệ thống Vận hành Quầy & Kho hàng'}
           </h1>
           <p className="text-xs sm:text-sm font-semibold text-emerald-950">
-            StockPilot • <span className="font-normal">Tập trung bán lẻ tại quầy, xuất nhập kho và xử lý cảnh báo trong ca</span>
+            StockPilot • <span className="font-normal">{isEn ? 'Focus on retail POS, warehouse stock movements, and shift alerts' : 'Tập trung bán lẻ tại quầy, xuất nhập kho và xử lý cảnh báo trong ca'}</span>
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-xs text-emerald-900 font-bold bg-white/80 px-3 py-1.5 rounded-xl border border-emerald-200">
             <Clock className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Cập nhật lúc {lastUpdated}</span>
+            <span>{isEn ? `Updated at ${lastUpdated}` : `Cập nhật lúc ${lastUpdated}`}</span>
           </div>
           <button
             onClick={handleRefresh}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-50 rounded-xl transition-all cursor-pointer border border-emerald-300 shadow-xs"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
+            <span>{isEn ? 'Refresh' : 'Làm mới'}</span>
           </button>
         </div>
       </header>
@@ -129,14 +168,14 @@ export function StaffOperationalDashboard() {
           </div>
           <div>
             <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">
-              Số đơn hàng trong ca
+              {isEn ? 'Orders this Shift' : 'Số đơn hàng trong ca'}
             </span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-2xl font-black text-slate-900">{completedOrdersCount}</span>
-              <span className="text-xs font-bold text-slate-500">đơn đã xử lý</span>
+              <span className="text-xs font-bold text-slate-500">{isEn ? 'orders processed' : 'đơn đã xử lý'}</span>
             </div>
             <span className="text-[11px] text-emerald-600 font-semibold block mt-0.5">
-              ✓ Hoàn tất xuất hàng tại quầy
+              {isEn ? '✓ Dispatched at counter' : '✓ Hoàn tất xuất hàng tại quầy'}
             </span>
           </div>
         </div>
@@ -148,16 +187,16 @@ export function StaffOperationalDashboard() {
           </div>
           <div>
             <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">
-              Tổng sản phẩm trong kho
+              {isEn ? 'Total Items in Warehouse' : 'Tổng sản phẩm trong kho'}
             </span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-2xl font-black text-slate-900">
-                {loading ? '...' : totalQuantity.toLocaleString('vi-VN')}
+                {loading ? '...' : totalQuantity.toLocaleString(isEn ? 'en-US' : 'vi-VN')}
               </span>
-              <span className="text-xs font-bold text-slate-500">sản phẩm</span>
+              <span className="text-xs font-bold text-slate-500">{isEn ? 'items' : 'sản phẩm'}</span>
             </div>
             <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
-              Đang lưu trữ {loading ? '...' : products.length} mặt hàng
+              {isEn ? `Storing ${loading ? '...' : products.length} products` : `Đang lưu trữ ${loading ? '...' : products.length} mặt hàng`}
             </span>
           </div>
         </div>
@@ -169,14 +208,16 @@ export function StaffOperationalDashboard() {
           </div>
           <div>
             <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">
-              Cảnh báo cần xử lý ngay
+              {isEn ? 'Urgent Alerts to Resolve' : 'Cảnh báo cần xử lý ngay'}
             </span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-2xl font-black text-rose-600">{alertCount}</span>
-              <span className="text-xs font-bold text-slate-500">mặt hàng</span>
+              <span className="text-xs font-bold text-slate-500">{isEn ? 'items' : 'mặt hàng'}</span>
             </div>
             <span className="text-[11px] text-amber-600 font-semibold block mt-0.5">
-              {outOfStockCount > 0 ? `${outOfStockCount} hết hàng, ` : ''}{lowStockCount > 0 ? `${lowStockCount} sắp hết` : 'Cần kiểm đếm'}
+              {isEn
+                ? `${outOfStockCount > 0 ? `${outOfStockCount} out of stock, ` : ''}${lowStockCount > 0 ? `${lowStockCount} low stock` : 'Needs count check'}`
+                : `${outOfStockCount > 0 ? `${outOfStockCount} hết hàng, ` : ''}${lowStockCount > 0 ? `${lowStockCount} sắp hết` : 'Cần kiểm đếm'}`}
             </span>
           </div>
         </div>
@@ -195,11 +236,13 @@ export function StaffOperationalDashboard() {
           <div className="relative z-10 flex items-center justify-between">
             <div className="space-y-1.5 max-w-[80%]">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-white/20 text-xs font-bold backdrop-blur-xs">
-                <span>Quầy thu ngân</span>
+                <span>{isEn ? 'Cashier Counter' : 'Quầy thu ngân'}</span>
               </div>
-              <h3 className="text-xl font-black tracking-tight">Màn hình Bán hàng tại quầy (POS)</h3>
+              <h3 className="text-xl font-black tracking-tight">{isEn ? 'Point of Sale (POS)' : 'Màn hình Bán hàng tại quầy (POS)'}</h3>
               <p className="text-xs text-blue-100 leading-relaxed font-medium">
-                Quét mã vạch, lên giỏ hàng, nhận thanh toán Tiền mặt / VietQR và in bill tự động.
+                {isEn
+                  ? 'Barcode scanning, cart operations, Cash / VietQR payments, and automatic receipt printing.'
+                  : 'Quét mã vạch, lên giỏ hàng, nhận thanh toán Tiền mặt / VietQR và in bill tự động.'}
               </p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-white/25 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0">
@@ -219,11 +262,13 @@ export function StaffOperationalDashboard() {
           <div className="relative z-10 flex items-center justify-between">
             <div className="space-y-1.5 max-w-[80%]">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-white/20 text-xs font-bold backdrop-blur-xs">
-                <span>Thao tác kho</span>
+                <span>{isEn ? 'Warehouse Operations' : 'Thao tác kho'}</span>
               </div>
-              <h3 className="text-xl font-black tracking-tight">Quản lý Kho & Kiểm đếm</h3>
+              <h3 className="text-xl font-black tracking-tight">{isEn ? 'Warehouse & Stocktaking' : 'Quản lý Kho & Kiểm đếm'}</h3>
               <p className="text-xs text-emerald-100 leading-relaxed font-medium">
-                Tạo phiếu nhập hàng, xuất kho điều chuyển, kiểm kê thực tế và cập nhật thẻ kho.
+                {isEn
+                  ? 'Create inbound receipts, transfer dispatches, physical stocktakes, and stock card updates.'
+                  : 'Tạo phiếu nhập hàng, xuất kho điều chuyển, kiểm kê thực tế và cập nhật thẻ kho.'}
               </p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-white/25 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0">
@@ -243,14 +288,16 @@ export function StaffOperationalDashboard() {
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm text-slate-900">Danh sách công việc cần làm trong ca trực</h3>
+                <h3 className="font-extrabold text-sm text-slate-900">{isEn ? 'Shift Task Checklist' : 'Danh sách công việc cần làm trong ca trực'}</h3>
                 <span className="text-[11px] text-slate-400 font-medium">
-                  Hoàn thành {tasks.filter((t) => t.done).length}/{tasks.length} mục
+                  {isEn
+                    ? `Completed ${tasks.filter((t) => t.done).length}/${tasks.length} tasks`
+                    : `Hoàn thành ${tasks.filter((t) => t.done).length}/${tasks.length} mục`}
                 </span>
               </div>
             </div>
             <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
-              {Math.round((tasks.filter((t) => t.done).length / tasks.length) * 100)}% hoàn thành
+              {Math.round((tasks.filter((t) => t.done).length / tasks.length) * 100)}% {isEn ? 'completed' : 'hoàn thành'}
             </span>
           </div>
 
@@ -272,7 +319,7 @@ export function StaffOperationalDashboard() {
                     <Square className="w-4 h-4 text-slate-400" />
                   )}
                 </div>
-                <span className="text-xs font-semibold leading-relaxed select-none">{task.text}</span>
+                <span className="text-xs font-semibold leading-relaxed select-none">{isEn ? task.textEn : task.textVi}</span>
               </div>
             ))}
           </div>
@@ -286,8 +333,8 @@ export function StaffOperationalDashboard() {
                 <ShieldAlert className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm text-slate-900">Mặt hàng cần kiểm tra ngay</h3>
-                <span className="text-[11px] text-slate-400 font-medium">Theo mức độ ưu tiên FIFO & Tồn kho</span>
+                <h3 className="font-extrabold text-sm text-slate-900">{isEn ? 'Urgent Items to Check' : 'Mặt hàng cần kiểm tra ngay'}</h3>
+                <span className="text-[11px] text-slate-400 font-medium">{isEn ? 'By FIFO & Stock Priority' : 'Theo mức độ ưu tiên FIFO & Tồn kho'}</span>
               </div>
             </div>
 
@@ -302,8 +349,8 @@ export function StaffOperationalDashboard() {
                     <span className="text-[10px] text-slate-400 font-mono">{p.sku}</span>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="text-xs font-black text-slate-900 block">{p.stock ?? 0} sp</span>
-                    <span className="text-[10px] font-bold text-amber-600">Ưu tiên xuất</span>
+                    <span className="text-xs font-black text-slate-900 block">{p.stock ?? 0} {isEn ? 'items' : 'sp'}</span>
+                    <span className="text-[10px] font-bold text-amber-600">{isEn ? 'Priority issue' : 'Ưu tiên xuất'}</span>
                   </div>
                 </div>
               ))}
@@ -314,7 +361,7 @@ export function StaffOperationalDashboard() {
             onClick={() => navigate('/alerts')}
             className="w-full mt-4 py-2 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100/70 rounded-xl transition-all cursor-pointer border border-blue-200 flex items-center justify-center gap-1.5"
           >
-            <span>Xem toàn bộ cảnh báo ({alertCount})</span>
+            <span>{isEn ? `View all alerts (${alertCount})` : `Xem toàn bộ cảnh báo (${alertCount})`}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

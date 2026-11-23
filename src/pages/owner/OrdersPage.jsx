@@ -2125,7 +2125,7 @@ export function OrdersPage() {
 
                 </span>
 
-                <span className="text-sm font-bold text-indigo-600">SP</span>
+                <span className="text-sm font-bold text-indigo-600">{isEn ? 'items' : 'SP'}</span>
 
               </div>
 

@@ -1838,23 +1838,23 @@ export function PosPage() {
                 style={{ background: 'linear-gradient(135deg, hsl(213 100% 97%) 0%, hsl(221 100% 95%) 100%)', border: '1px solid hsl(217 91% 88%)' }}
               >
                 <div>
-                  <span className="text-[9.5px] text-blue-500 font-bold uppercase tracking-wider block">Khách hàng</span>
-                  <p className="font-bold text-xs text-slate-800 mt-0.5">{activeTab.customer.name || 'Khách lẻ'}</p>
+                  <span className="text-[9.5px] text-blue-500 font-bold uppercase tracking-wider block">{language === 'en' ? 'Customer' : 'Khách hàng'}</span>
+                  <p className="font-bold text-xs text-slate-800 mt-0.5">{activeTab.customer.name === 'Khách lẻ' ? (language === 'en' ? 'Walk-in Customer' : 'Khách lẻ') : (activeTab.customer.name || (language === 'en' ? 'Walk-in Customer' : 'Khách lẻ'))}</p>
                   {activeTab.customer.phone && <p className="text-[11px] text-slate-500">{activeTab.customer.phone}</p>}
                 </div>
                 <span
                   className="text-[11px] font-black px-2 py-1 rounded-lg text-blue-700"
                   style={{ background: 'hsl(213 100% 91%)' }}
                 >
-                  {activeTab.items.length} mặt hàng
+                  {activeTab.items.length} {language === 'en' ? 'items' : 'mặt hàng'}
                 </span>
               </div>
 
               {/* Order Items summary */}
               <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'hsl(214 25% 89%)' }}>
                 <div className="px-3 py-1.5 border-b flex items-center justify-between" style={{ background: 'hsl(214 30% 96%)', borderColor: 'hsl(214 25% 89%)' }}>
-                  <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500">Chi tiết đơn hàng</span>
-                  <span className="text-[10px] text-slate-400 font-medium">({activeTab.items.reduce((s, it) => s + it.quantity, 0)} sản phẩm)</span>
+                  <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500">{language === 'en' ? 'Order Details' : 'Chi tiết đơn hàng'}</span>
+                  <span className="text-[10px] text-slate-400 font-medium">({activeTab.items.reduce((s, it) => s + it.quantity, 0)} {language === 'en' ? 'items' : 'sản phẩm'})</span>
                 </div>
                 <div className="divide-y max-h-[180px] overflow-y-auto" style={{ divideColor: 'hsl(214 25% 92%)' }}>
                   {activeTab.items.map((it) => (
@@ -1872,12 +1872,12 @@ export function PosPage() {
               {/* Payment summary */}
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>Tổng tiền hàng</span>
+                  <span>{language === 'en' ? 'Subtotal' : 'Tổng tiền hàng'}</span>
                   <span className="font-semibold text-slate-800 money">{formatVND(subtotalAmount)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Giảm giá</span>
+                  <span className="text-slate-600">{language === 'en' ? 'Discount' : 'Giảm giá'}</span>
                   <div className="w-28">
                     <input
                       type="number"
@@ -1897,12 +1897,12 @@ export function PosPage() {
                     borderColor: '#bfdbfe',
                   }}
                 >
-                  <span className="font-bold text-blue-900 text-xs">Khách cần trả</span>
+                  <span className="font-bold text-blue-900 text-xs">{language === 'en' ? 'Amount Due' : 'Khách cần trả'}</span>
                   <span className="text-xl font-black text-blue-700 money">{formatVND(totalPayable)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-slate-700 text-xs">Khách thanh toán</span>
+                  <span className="font-medium text-slate-700 text-xs">{language === 'en' ? 'Tendered' : 'Khách thanh toán'}</span>
                   <div className="w-36">
                     <input
                       type="number"
@@ -1934,21 +1934,21 @@ export function PosPage() {
                 </div>
 
                 <div className="flex justify-between items-center pt-0.5">
-                  <span className="text-slate-600">Tiền thừa trả khách</span>
+                  <span className="text-slate-600">{language === 'en' ? 'Change Due' : 'Tiền thừa trả khách'}</span>
                   <span className={`font-black text-sm money ${changeDue >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {changeDue >= 0 ? formatVND(changeDue) : `Thiếu ${formatVND(Math.abs(changeDue))}`}
+                    {changeDue >= 0 ? formatVND(changeDue) : (language === 'en' ? `Short ${formatVND(Math.abs(changeDue))}` : `Thiếu ${formatVND(Math.abs(changeDue))}`)}
                   </span>
                 </div>
               </div>
 
               {/* Payment methods */}
               <div className="space-y-1.5 pt-0.5">
-                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500 block">Phương thức thanh toán</span>
+                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500 block">{language === 'en' ? 'Payment Method' : 'Phương thức thanh toán'}</span>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { id: 'CASH', label: 'Tiền mặt', icon: Banknote },
+                    { id: 'CASH', label: language === 'en' ? 'Cash' : 'Tiền mặt', icon: Banknote },
                     { id: 'BANK_TRANSFER', label: 'VietQR PayOS', icon: QrCode },
-                    { id: 'MOMO', label: 'Ví MoMo', icon: Smartphone },
+                    { id: 'MOMO', label: language === 'en' ? 'MoMo Wallet' : 'Ví MoMo', icon: Smartphone },
                   ].map((m) => {
                     const Icon = m.icon;
                     const isSelected = paymentMethod === m.id;
@@ -2000,7 +2000,7 @@ export function PosPage() {
                 }}
               >
                 <Printer className="w-4 h-4 text-blue-600" />
-                {isProcessing ? 'Đang xử lý...' : 'THANH TOÁN & IN HÓA ĐƠN'}
+                {isProcessing ? (language === 'en' ? 'Processing...' : 'Đang xử lý...') : (language === 'en' ? 'PAY & PRINT RECEIPT' : 'THANH TOÁN & IN HÓA ĐƠN')}
               </button>
 
               <button
@@ -2009,7 +2009,7 @@ export function PosPage() {
                 className="w-full py-1.5 rounded-xl border text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-all disabled:opacity-50 cursor-pointer"
                 style={{ borderColor: 'hsl(214 25% 87%)' }}
               >
-                Chỉ thanh toán (Không in)
+                {language === 'en' ? 'Pay only (No Print)' : 'Chỉ thanh toán (Không in)'}
               </button>
             </div>
           </div>
@@ -2028,8 +2028,8 @@ export function PosPage() {
               style={{ background: 'linear-gradient(180deg, #f8fafd 0%, #f1f5fb 100%)', borderColor: 'hsl(214 25% 89%)' }}
             >
               <div>
-                <h3 className="font-black text-sm text-slate-900">Thêm thông tin khách hàng</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Lưu thông tin để ghi vào hóa đơn</p>
+                <h3 className="font-black text-sm text-slate-900">{language === 'en' ? 'Add Customer Details' : 'Thêm thông tin khách hàng'}</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">{language === 'en' ? 'Save details to record on invoice' : 'Lưu thông tin để ghi vào hóa đơn'}</p>
               </div>
               <button onClick={() => setIsAddCustomerOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
                 <X className="w-4 h-4" />
@@ -2038,17 +2038,17 @@ export function PosPage() {
 
             <div className="p-5 space-y-3.5">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Tên khách hàng <span className="text-red-500">*</span></label>
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">{language === 'en' ? 'Customer Name' : 'Tên khách hàng'} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: Anh Hoàng Nam"
+                  placeholder={language === 'en' ? 'E.g., John Smith' : 'Ví dụ: Anh Hoàng Nam'}
                   value={custNameInput}
                   onChange={(e) => setCustNameInput(e.target.value)}
                   className="w-full p-2.5 border border-slate-200 rounded-lg bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Số điện thoại</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">{language === 'en' ? 'Phone Number' : 'Số điện thoại'}</label>
                 <input
                   type="text"
                   placeholder="Ví dụ: 0987654321"
@@ -2070,7 +2070,7 @@ export function PosPage() {
               <button
                 onClick={() => {
                   if (!custNameInput.trim()) {
-                    toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập tên khách hàng', type: 'error' });
+                    toast({ title: language === 'en' ? 'Missing information' : 'Thiếu thông tin', description: language === 'en' ? 'Please enter customer name' : 'Vui lòng nhập tên khách hàng', type: 'error' });
                     return;
                   }
                   updateActiveTab({ customer: { name: custNameInput.trim(), phone: custPhoneInput.trim() } });

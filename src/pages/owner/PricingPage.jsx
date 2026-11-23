@@ -28,6 +28,29 @@ function formatPricingReason(text, isEn) {
       'Algorithmic pricing optimization based on inventory and velocity.');
 }
 
+function formatFactorCategory(cat, isEn) {
+  if (!cat || !isEn) return cat || '';
+  const map = {
+    'Vận tốc bán hàng': 'Sales Velocity',
+    'Tồn kho': 'Inventory Level',
+    'Biên lợi nhuận': 'Profit Margin',
+    'Thị trường & Mùa vụ': 'Market & Seasonality',
+    'Biến động nhu cầu': 'Demand Fluctuation',
+  };
+  return map[cat] || cat;
+}
+
+function formatFactorName(name, isEn) {
+  if (!name || !isEn) return name || '';
+  const map = {
+    'Tốc độ tiêu thụ hàng ngày': 'Daily Sales Velocity',
+    'Mức độ tồn kho hiện tại': 'Current Stock Level',
+    'Mục tiêu biên lợi nhuận tối thiểu': 'Minimum Margin Target',
+    'Tỷ lệ co giãn nhu cầu': 'Demand Elasticity',
+  };
+  return map[name] || name;
+}
+
 export function PricingPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -432,8 +455,8 @@ export function PricingPage() {
                         {h.decision === 'accepted' ? (isEn ? 'Accepted' : 'Đã chấp nhận') : h.decision === 'modified' ? (isEn ? 'Modified' : 'Đã chỉnh sửa') : (isEn ? 'Rejected' : 'Đã từ chối')}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-foreground">{h.decidedBy}</td>
-                    <td className="py-3 px-4 text-muted-foreground max-w-xs truncate">{h.reason}</td>
+                    <td className="py-3 px-4 text-foreground">{h.decidedBy === 'Chủ shop' ? (isEn ? 'Store Owner' : 'Chủ shop') : h.decidedBy}</td>
+                    <td className="py-3 px-4 text-muted-foreground max-w-xs truncate">{formatPricingReason(h.reason, isEn)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -669,9 +692,9 @@ export function PricingPage() {
                   {detailModalItem.factors.map((f, idx) => (
                     <div key={idx} className="p-3.5 rounded-xl border border-border bg-card flex items-start justify-between gap-3">
                       <div>
-                        <span className="text-xs font-bold text-blue-600 block">{f.category}</span>
-                        <h5 className="text-sm font-semibold text-foreground mt-0.5">{f.name}</h5>
-                        <p className="text-xs text-muted-foreground mt-1">{f.detail}</p>
+                        <span className="text-xs font-bold text-blue-600 block">{formatFactorCategory(f.category, isEn)}</span>
+                        <h5 className="text-sm font-semibold text-foreground mt-0.5">{formatFactorName(f.name, isEn)}</h5>
+                        <p className="text-xs text-muted-foreground mt-1">{formatPricingReason(f.detail || f.label, isEn)}</p>
                       </div>
                       <span className="text-xs font-bold px-2 py-1 rounded bg-muted text-foreground shrink-0">
                         {f.impact}
