@@ -1673,7 +1673,7 @@ export function PosPage() {
                     }}
                     className={`relative p-2 rounded-xl border text-left flex items-center gap-2.5 transition-all group ${
                       isOutOfStock
-                        ? 'bg-slate-100/70 border-slate-200/70 opacity-60 cursor-not-allowed select-none'
+                        ? 'bg-slate-50/80 border-slate-200 opacity-80 cursor-not-allowed select-none'
                         : inCart
                         ? 'bg-blue-50/70 border-blue-400 shadow-xs ring-1 ring-blue-400/40 cursor-pointer'
                         : 'bg-white border-slate-200/90 hover:border-blue-400 hover:shadow-xs cursor-pointer'
@@ -1687,20 +1687,18 @@ export function PosPage() {
                     )}
 
                     {/* Product Image on the Left */}
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden bg-slate-50 border border-slate-100 p-0.5 flex items-center justify-center">
+                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden bg-white border border-slate-100 p-0.5 flex items-center justify-center">
                       <img
                         src={imgUrl}
                         alt={p.name}
-                        className={`w-full h-full object-contain transition-transform duration-300 ${
-                          isOutOfStock ? 'grayscale opacity-50' : 'group-hover:scale-105'
-                        }`}
+                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                         onError={(e) => {
                           e.target.src = "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=200&h=200&fit=crop";
                         }}
                       />
                       {isOutOfStock && (
-                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[0.5px] flex items-center justify-center rounded-lg p-0.5 z-10">
-                          <span className="bg-red-600 text-white text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded shadow tracking-tight uppercase text-center leading-none">
+                        <div className="absolute bottom-0 inset-x-0 bg-red-600/90 py-0.5 flex items-center justify-center z-10">
+                          <span className="text-white text-[7.5px] sm:text-[8px] font-bold tracking-tight uppercase text-center leading-none">
                             {isEn ? 'Out of stock' : 'Hết hàng'}
                           </span>
                         </div>
@@ -1736,7 +1734,11 @@ export function PosPage() {
                         }`}>
                           {Number(price).toLocaleString('vi-VN')}
                         </p>
-                        {!isOutOfStock && (
+                        {isOutOfStock ? (
+                          <span className="text-[10px] text-red-500 font-bold">
+                            {isEn ? 'Out of stock' : 'Hết hàng'}
+                          </span>
+                        ) : (
                           <span className="text-[10px] text-slate-400 font-medium">
                             {isEn ? `Stock: ${stock}` : `Còn: ${stock}`}
                           </span>
