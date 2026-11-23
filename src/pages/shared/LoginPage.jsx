@@ -40,12 +40,15 @@ export function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
-    if (!email.trim()) {
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail) {
       setLoginError(isEn ? 'Please enter your email address!' : 'Vui lòng nhập email!');
       return;
     }
-    if (!password) {
-      setLoginError(isEn ? 'Please enter your password!' : 'Vui lòng nhập mật khẩu!');
+    if (!cleanPassword) {
+      setLoginError(isEn ? 'Password cannot be empty or only spaces!' : 'Mật khẩu không được để trống hoặc chỉ chứa khoảng trắng!');
       return;
     }
     if (needsOtp && otpCode.trim().length < 6) {
@@ -53,7 +56,7 @@ export function LoginPage() {
       return;
     }
     setIsLoading(true);
-    const result = await login({ email: email.trim(), password, otpCode: needsOtp ? otpCode.trim() : undefined });
+    const result = await login({ email: cleanEmail, password: cleanPassword, otpCode: needsOtp ? otpCode.trim() : undefined });
     setIsLoading(false);
     if (result.success) {
       toast({
@@ -172,7 +175,7 @@ export function LoginPage() {
                   name="username"
                   type="text"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ''))}
                   placeholder={isEn ? 'owner@store.com' : 'email@cuahang.com'}
                   autoComplete="username"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 text-slate-900 text-sm rounded-xl border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 font-medium"
