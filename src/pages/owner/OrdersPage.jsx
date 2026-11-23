@@ -2472,7 +2472,7 @@ export function OrdersPage() {
 
               <Calendar className="w-4 h-4 text-blue-600" />
 
-              <span>Chế độ xem:</span>
+              <span>{isEn ? 'View mode:' : 'Chế độ xem:'}</span>
 
             </div>
 
@@ -2500,7 +2500,7 @@ export function OrdersPage() {
 
               >
 
-                Theo ngày
+                {isEn ? 'By day' : 'Theo ngày'}
 
               </button>
 
@@ -2522,7 +2522,7 @@ export function OrdersPage() {
 
               >
 
-                Theo tháng
+                {isEn ? 'By month' : 'Theo tháng'}
 
               </button>
 
@@ -2560,7 +2560,7 @@ export function OrdersPage() {
 
                   <Calendar className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
 
-                  <span>Ngày {selectedCustomDate.split('-').reverse().join('/')}</span>
+                  <span>{isEn ? 'Date' : 'Ngày'} {selectedCustomDate.split('-').reverse().join('/')}</span>
 
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
 
@@ -2602,7 +2602,7 @@ export function OrdersPage() {
 
                           className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
 
-                          title="Tháng trước"
+                          title={isEn ? 'Previous month' : 'Tháng trước'}
 
                         >
 
@@ -2614,7 +2614,7 @@ export function OrdersPage() {
 
                         <span className="font-extrabold text-xs sm:text-sm text-slate-900">
 
-                          Tháng {pickerMonthIndex + 1}, Năm {pickerYear}
+                          {isEn ? `Month ${pickerMonthIndex + 1}, Year ${pickerYear}` : `Tháng ${pickerMonthIndex + 1}, Năm ${pickerYear}`}
 
                         </span>
 
@@ -2642,7 +2642,7 @@ export function OrdersPage() {
 
                           className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
 
-                          title="Tháng sau"
+                          title={isEn ? 'Next month' : 'Tháng sau'}
 
                         >
 
@@ -2654,23 +2654,23 @@ export function OrdersPage() {
 
 
 
-                      {/* Weekday labels in Vietnamese */}
+                      {/* Weekday labels */}
 
                       <div className="grid grid-cols-7 gap-1 pt-3 pb-2 text-center text-[10px] font-extrabold text-slate-400">
 
-                        <span>T2</span>
+                        <span>{isEn ? 'Mon' : 'T2'}</span>
 
-                        <span>T3</span>
+                        <span>{isEn ? 'Tue' : 'T3'}</span>
 
-                        <span>T4</span>
+                        <span>{isEn ? 'Wed' : 'T4'}</span>
 
-                        <span>T5</span>
+                        <span>{isEn ? 'Thu' : 'T5'}</span>
 
-                        <span>T6</span>
+                        <span>{isEn ? 'Fri' : 'T6'}</span>
 
-                        <span className="text-blue-500">T7</span>
+                        <span className="text-blue-500">{isEn ? 'Sat' : 'T7'}</span>
 
-                        <span className="text-rose-500">CN</span>
+                        <span className="text-rose-500">{isEn ? 'Sun' : 'CN'}</span>
 
                       </div>
 
@@ -2760,7 +2760,7 @@ export function OrdersPage() {
                                   }}
                                   className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold cursor-pointer"
                                 >
-                                  Hôm nay (${todayVN.dateStr.slice(8, 10)}/${todayVN.dateStr.slice(5, 7)})
+                                  {isEn ? 'Today' : 'Hôm nay'} (${todayVN.dateStr.slice(8, 10)}/${todayVN.dateStr.slice(5, 7)})
                                 </button>
                                 <button
                                   type="button"
@@ -2772,7 +2772,7 @@ export function OrdersPage() {
                                   }}
                                   className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold cursor-pointer"
                                 >
-                                  Hôm qua (${d}/${m})
+                                  {isEn ? 'Yesterday' : 'Hôm qua'} (${d}/${m})
                                 </button>
                               </>
                             );
@@ -2789,7 +2789,7 @@ export function OrdersPage() {
 
                         >
 
-                          Đóng
+                          {isEn ? 'Close' : 'Đóng'}
 
                         </button>
 
@@ -2831,7 +2831,7 @@ export function OrdersPage() {
 
                   <Calendar className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
 
-                  <span>Tháng {selectedCustomMonth.split('-')[1]} / {selectedCustomMonth.split('-')[0]}</span>
+                  <span>{isEn ? 'Month' : 'Tháng'} {selectedCustomMonth.split('-')[1]} / {selectedCustomMonth.split('-')[0]}</span>
 
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600" />
 
@@ -2859,7 +2859,7 @@ export function OrdersPage() {
 
                           className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
 
-                          title="Năm trước"
+                          title={isEn ? 'Previous year' : 'Năm trước'}
 
                         >
 
@@ -2871,7 +2871,7 @@ export function OrdersPage() {
 
                         <span className="font-extrabold text-xs sm:text-sm text-slate-900">
 
-                          Năm {pickerYear}
+                          {isEn ? `Year ${pickerYear}` : `Năm ${pickerYear}`}
 
                         </span>
 
@@ -2885,7 +2885,7 @@ export function OrdersPage() {
 
                           className="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
 
-                          title="Năm sau"
+                          title={isEn ? 'Next year' : 'Năm sau'}
 
                         >
 
@@ -2897,7 +2897,7 @@ export function OrdersPage() {
 
 
 
-                      {/* 12 Months Grid in Vietnamese */}
+                      {/* 12 Months Grid */}
 
                       <div className="grid grid-cols-3 gap-2 pt-3 pb-1">
 
@@ -2937,7 +2937,7 @@ export function OrdersPage() {
 
                             >
 
-                              Tháng {m}
+                              {isEn ? `Month ${m}` : `Tháng ${m}`}
 
                             </button>
 
@@ -2971,7 +2971,7 @@ export function OrdersPage() {
 
                         >
 
-                          Tháng 10/2026 (Hiện tại)
+                          {isEn ? 'Month 10/2026 (Current)' : 'Tháng 10/2026 (Hiện tại)'}
 
                         </button>
 
@@ -2985,7 +2985,7 @@ export function OrdersPage() {
 
                         >
 
-                          Đóng
+                          {isEn ? 'Close' : 'Đóng'}
 
                         </button>
 
@@ -3009,9 +3009,13 @@ export function OrdersPage() {
 
             {customFilterMode === 'day'
 
-              ? `Đang lọc: Ngày ${selectedCustomDate.split('-').reverse().join('/')}`
+              ? (isEn
+                  ? `Filtering: Day ${selectedCustomDate.split('-').reverse().join('/')}`
+                  : `Đang lọc: Ngày ${selectedCustomDate.split('-').reverse().join('/')}`)
 
-              : `Đang lọc: Tháng ${selectedCustomMonth.split('-')[1]}/${selectedCustomMonth.split('-')[0]}`}
+              : (isEn
+                  ? `Filtering: Month ${selectedCustomMonth.split('-')[1]}/${selectedCustomMonth.split('-')[0]}`
+                  : `Đang lọc: Tháng ${selectedCustomMonth.split('-')[1]}/${selectedCustomMonth.split('-')[0]}`)}
 
           </div>
 

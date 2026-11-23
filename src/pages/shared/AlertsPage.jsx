@@ -94,20 +94,31 @@ function cleanAlertText(str, isEn) {
   if (!str) return '';
   let res = String(str)
     .replace(/\bSKU\s+SP/gi, 'SP')
-    .replace(/\bSKU\s+/gi, 'SP ')
-    .replace(/\(Z-Score:\s*([^)]+)\)/gi, isEn ? '(Z-Score std dev: $1)' : '(Độ lệch chuẩn Z: $1)');
+    .replace(/\bSKU\s+/gi, 'SP ');
+
   if (isEn) {
     res = res
+      // Prefixes
       .replace(/^(Cảnh báo hết hàng|Hết hàng):\s*/i, 'Out of Stock: ')
       .replace(/^(Cảnh báo thừa hàng|Thừa hàng):\s*/i, 'Overstock Alert: ')
       .replace(/^(Cảnh báo tồn kho thấp|Tồn kho thấp|Tồn thấp):\s*/i, 'Low Stock Alert: ')
       .replace(/^(Cảnh báo bán chậm|Bán chậm):\s*/i, 'Slow-Moving Alert: ')
       .replace(/^(Cảnh báo hàng ứ đọng|Hàng ứ đọng):\s*/i, 'Dead Stock Alert: ')
-      .replace(/^(Cảnh báo biến động nhu cầu|Biến động nhu cầu):\s*/i, 'Unusual Demand Alert: ')
-      .replace(/Sản phẩm (\S+)\s+hiện có sẵn\s+(\d+)\s+(?:sản phẩm|đơn vị)?\s*trong kho[\.\s]*Cần nhập hàng khẩn cấp\.?/i, 'Product $1 currently has $2 units in stock. Urgent replenishment required.')
-      .replace(/Sản phẩm (\S+)\s+có mức tồn kho vượt ngưỡng an toàn so với tốc độ tiêu thụ hiện tại\.?/i, 'Product $1 stock level exceeds safe threshold relative to current sales velocity.')
-      .replace(/Sản phẩm (\S+)\s+chỉ còn\s+(\d+)\s+đơn vị khả dụng,\s*dưới điểm đặt hàng\s+(\d+)\.?/i, 'Product $1 has only $2 available units left, below the reorder point of $3.')
-      .replace(/Sản phẩm (\S+)\s+đã hết hàng hoàn toàn trong kho\.?/i, 'Product $1 is completely out of stock in warehouse.');
+      .replace(/^(Cảnh báo biến động nhu cầu|Biến động nhu cầu|Cảnh báo nhu cầu bất thường|Nhu cầu bất thường):\s*/i, 'Unusual Demand: ')
+      // Out of stock descriptions
+      .replace(/(?:Sản phẩm\s+)?(\S+)\s+hiện có sẵn\s+(\d+)\s*(?:sản phẩm|đơn vị)?\s*trong kho[\.\s]*Cần nhập hàng khẩn cấp\.?/i, 'Product $1 currently has $2 available units in stock. Urgent replenishment required.')
+      .replace(/(?:Sản phẩm\s+)?(\S+)\s+đã hết hàng hoàn toàn trong kho\.?/i, 'Product $1 is completely out of stock in warehouse.')
+      // Unusual demand descriptions
+      .replace(/(?:Sản phẩm\s+)?(\S+)\s+có biến động nhu cầu đột biến\s*\((?:Độ lệch chuẩn Z|Z-Score):\s*([^)]+)\)\.?/i, 'Product $1 has unusual demand fluctuation (Z-Score std dev: $2).')
+      // Low stock descriptions
+      .replace(/(?:Sản phẩm\s+)?(\S+)\s+chỉ còn\s+(\d+)\s+đơn vị khả dụng,\s*dưới điểm đặt hàng\s+(\d+)\.?/i, 'Product $1 has only $2 available units left, below the reorder point of $3.')
+      // Overstock descriptions
+      .replace(/(?:Sản phẩm\s+)?(\S+)\s+có mức tồn kho vượt ngưỡng an toàn so với tốc độ tiêu thụ hiện tại\.?/i, 'Product $1 stock level exceeds safe threshold relative to current sales velocity.')
+      // Standalone Z-Score replace
+      .replace(/\(Độ lệch chuẩn Z:\s*([^)]+)\)/gi, '(Z-Score std dev: $1)')
+      .replace(/\(Z-Score:\s*([^)]+)\)/gi, '(Z-Score std dev: $1)');
+  } else {
+    res = res.replace(/\(Z-Score:\s*([^)]+)\)/gi, '(Độ lệch chuẩn Z: $1)');
   }
   return res;
 }

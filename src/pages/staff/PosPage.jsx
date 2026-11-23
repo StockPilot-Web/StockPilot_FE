@@ -1187,7 +1187,11 @@ export function PosPage() {
 
     // ── XỬ LÝ THANH TOÁN TIỀN MẶT (CASH) ──
     if (customerPayNum < totalPayable && paymentMethod === 'CASH') {
-      toast({ title: 'Chưa đủ tiền', description: 'Tiền khách đưa nhỏ hơn tổng cần thanh toán', type: 'error' });
+      toast({
+        title: isEn ? 'Insufficient payment' : 'Chưa đủ tiền',
+        description: isEn ? 'Amount tendered is less than total payable' : 'Tiền khách đưa nhỏ hơn tổng cần thanh toán',
+        type: 'error'
+      });
       return;
     }
 
@@ -1920,7 +1924,7 @@ export function PosPage() {
                     onClick={() => setAmountGiven(String(totalPayable))}
                     className="px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all cursor-pointer"
                   >
-                    Đủ tiền
+                    {language === 'en' ? 'Exact' : 'Đủ tiền'}
                   </button>
                   {[50000, 100000, 200000, 500000].map((val) => (
                     <button
