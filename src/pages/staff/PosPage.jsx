@@ -1731,15 +1731,9 @@ export function PosPage() {
                         }`}>
                           {Number(price).toLocaleString('vi-VN')}
                         </p>
-                        {isOutOfStock ? (
-                          <span className="text-[10px] text-red-500 font-bold">
-                            {isEn ? 'Out of stock' : 'Hết hàng'}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            {isEn ? `Stock: ${stock}` : `Còn: ${stock}`}
-                          </span>
-                        )}
+                        <span className={`text-[10px] ${isOutOfStock ? 'text-red-500 font-bold' : 'text-slate-400 font-medium'}`}>
+                          {isEn ? `Stock: ${Math.max(0, stock)}` : `Còn: ${Math.max(0, stock)}`}
+                        </span>
                       </div>
                     </div>
                   </button>
