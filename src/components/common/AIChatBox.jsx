@@ -398,7 +398,7 @@ export function AIChatBox() {
                 type="button"
                 onClick={handleClearChat}
                 className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
-                title="Làm mới cuộc trò chuyện"
+                title={isEn ? "Reset conversation" : "Làm mới cuộc trò chuyện"}
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
@@ -407,7 +407,7 @@ export function AIChatBox() {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
-                title="Đóng chatbox"
+                title={isEn ? "Close chat" : "Đóng chatbox"}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -582,7 +582,7 @@ export function AIChatBox() {
                       ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
                       : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                   }`}
-                  title={autoSpeakEnabled ? 'Tự động đọc giọng nói: BẬT' : 'Tự động đọc giọng nói: TẮT'}
+                  title={autoSpeakEnabled ? (isEn ? 'Voice read-out: ON' : 'Tự động đọc giọng nói: BẬT') : (isEn ? 'Voice read-out: OFF' : 'Tự động đọc giọng nói: TẮT')}
                 >
                   {autoSpeakEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 </button>
@@ -598,7 +598,7 @@ export function AIChatBox() {
                       ? 'bg-purple-600 hover:bg-purple-700 text-white animate-pulse shadow-md shadow-purple-500/30 ring-2 ring-purple-400/50'
                       : 'bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600'
                   }`}
-                  title={isListening ? 'Đang Lắng Nghe... Bấm để gửi' : 'Hỏi bằng giọng nói (Groq Whisper AI)'}
+                  title={isListening ? (isEn ? 'Listening... Click to send' : 'Đang Lắng Nghe... Bấm để gửi') : (isEn ? 'Voice query (Groq Whisper AI)' : 'Hỏi bằng giọng nói (Groq Whisper AI)')}
                 >
                   <Mic className="w-4 h-4" />
                 </button>

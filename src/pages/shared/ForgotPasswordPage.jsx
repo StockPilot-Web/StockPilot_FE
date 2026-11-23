@@ -250,11 +250,12 @@ export function ForgotPasswordPage() {
   // STEP 3: Đặt lại mật khẩu (API thật)
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 8) {
+    const cleanNewPw = newPassword.replace(/\s+/g, '');
+    if (!cleanNewPw || cleanNewPw.length < 8) {
       toast({
         type: 'error',
         title: isEn ? 'Password too short' : 'Mật khẩu quá ngắn',
-        message: isEn ? 'New password must be at least 8 characters!' : 'Mật khẩu mới phải có ít nhất 8 ký tự!',
+        message: isEn ? 'New password must be at least 8 characters and cannot contain spaces!' : 'Mật khẩu mới phải có ít nhất 8 ký tự và không chứa khoảng trắng!',
       });
       return;
     }
@@ -272,7 +273,7 @@ export function ForgotPasswordPage() {
       const payload = {
         token: resetToken,
         otp: otp.join(''),
-        newPassword,
+        newPassword: cleanNewPw,
       };
       if (method === 'phone_otp') {
         payload.phone = phoneNumber.trim().replace(/\s+/g, '');
@@ -301,12 +302,13 @@ export function ForgotPasswordPage() {
   // Password Strength Calculator
   const getPasswordStrength = (pass) => {
     if (!pass) return { score: 0, label: '', color: 'bg-slate-200' };
+    const clean = pass.replace(/\s/g, '');
     let score = 0;
-    if (pass.length >= 6) score++;
-    if (pass.length >= 8) score++;
-    if (/[A-Z]/.test(pass)) score++;
-    if (/[0-9]/.test(pass)) score++;
-    if (/[^A-Za-z0-9]/.test(pass)) score++;
+    if (clean.length >= 6) score++;
+    if (clean.length >= 8) score++;
+    if (/[A-Z]/.test(clean)) score++;
+    if (/[0-9]/.test(clean)) score++;
+    if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(clean)) score++;
 
     if (score <= 2) return { score: 1, label: isEn ? 'Weak' : 'Yếu', color: 'bg-rose-500' };
     if (score <= 4) return { score: 2, label: isEn ? 'Medium' : 'Trung bình', color: 'bg-amber-500' };
@@ -658,7 +660,8 @@ export function ForgotPasswordPage() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) => setNewPassword(e.target.value.replace(/\s+/g, ''))}
+                    onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                     placeholder={isEn ? 'Enter new password (min 8 characters)' : 'Nhập mật khẩu mới (tối thiểu 8 ký tự)'}
                     className="w-full pl-10 pr-10 py-2.5 bg-slate-50 text-slate-900 text-sm rounded-xl border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium"
                     autoFocus
@@ -699,7 +702,8 @@ export function ForgotPasswordPage() {
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => setConfirmPassword(e.target.value.replace(/\s+/g, ''))}
+                    onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                     placeholder={isEn ? 'Re-enter new password' : 'Nhập lại mật khẩu mới'}
                     className="w-full pl-10 pr-10 py-2.5 bg-slate-50 text-slate-900 text-sm rounded-xl border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium"
                   />

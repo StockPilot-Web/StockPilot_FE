@@ -9,9 +9,25 @@ import { useToast } from '../../components/common/Toast';
 import { apiGetAnalyticsSummary } from '../../services/analyticsService';
 import { RevenueBookExport } from '../../features/tax-support/components/RevenueBookExport';
 import { useTranslation } from '../../i18n/useTranslation';
+import { formatCategoryName } from '../../components/store/productStore';
 
 function formatVND(n) {
   return Number(n || 0).toLocaleString('vi-VN') + ' đ';
+}
+
+function formatTag(tag, isEn) {
+  if (!tag || !isEn) return tag || '';
+  if (tag === 'Bán chạy nhất') return 'Best Seller';
+  if (tag === 'Phát sinh đơn đều') return 'Steady Sales';
+  return tag;
+}
+
+function formatSuggestion(sug, isEn) {
+  if (!sug || !isEn) return sug || '';
+  if (sug.includes('Theo dõi biến động tồn')) return 'Track Stock Changes';
+  if (sug.includes('Đẩy bán') || sug.includes('xả kho')) return 'Clearance Sale';
+  if (sug.includes('giảm giá')) return 'Consider Markdown';
+  return sug;
 }
 
 const TIME_RANGES = [
@@ -656,7 +672,7 @@ export function AnalyticsPage() {
                   <tbody className="divide-y divide-slate-100">
                     {categoryStats.map((cat, idx) => (
                       <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-slate-800">{cat.name}</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-800">{formatCategoryName(cat.name, isEn)}</td>
                         <td className="py-3.5 px-4 text-right font-bold text-foreground">{formatVND(cat.revenue)}</td>
                         <td className="py-3.5 px-4 text-right font-bold text-emerald-600">{formatVND(cat.profit)}</td>
                         <td className="py-3.5 px-4 text-center">
@@ -715,12 +731,12 @@ export function AnalyticsPage() {
                             {item.sku && <span className="analytics-code">{item.sku}</span>}
                           </div>
                           <span className="text-[11px] text-slate-500">
-                            {isEn ? 'Sold: ' : 'Đã bán: '}<strong className="text-blue-700 font-bold">{item.sold} SP</strong> • {formatVND(item.revenue)} ({isEn ? 'Margin: ' : 'Biên LN: '}<strong>{item.margin}%</strong>)
+                            {isEn ? 'Sold: ' : 'Đã bán: '}<strong className="text-blue-700 font-bold">{item.sold} {isEn ? 'items' : 'SP'}</strong> • {formatVND(item.revenue)} ({isEn ? 'Margin: ' : 'Biên LN: '}<strong>{item.margin}%</strong>)
                           </span>
                         </div>
                       </div>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/70 font-bold shrink-0">
-                        {item.tag}
+                        {formatTag(item.tag, isEn)}
                       </span>
                     </div>
                   ))}
@@ -767,12 +783,12 @@ export function AnalyticsPage() {
                         <span className="text-[11px] text-slate-500">
                           {item.neverSold
                             ? <><strong className="text-rose-600">{isEn ? 'Never sold' : 'Chưa bán lần nào'}</strong> ({isEn ? `added ${item.daysNoSale} days ago` : `tạo ${item.daysNoSale} ngày trước`}) •</>
-                            : <><strong className="text-rose-600">{item.daysNoSale} {isEn ? 'days' : 'ngày'}</strong> {isEn ? 'since last sale' : 'từ lần bán cuối'} •</>} {isEn ? 'Stock: ' : 'Tồn: '}<strong>{item.stock} SP</strong> ({formatVND(item.capital)})
+                            : <><strong className="text-rose-600">{item.daysNoSale} {isEn ? 'days' : 'ngày'}</strong> {isEn ? 'since last sale' : 'từ lần bán cuối'} •</>} {isEn ? 'Stock: ' : 'Tồn: '}<strong>{item.stock} {isEn ? 'items' : 'SP'}</strong> ({formatVND(item.capital)})
                         </span>
                       </div>
                       <div className="text-right shrink-0">
                         <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200/70 px-2 py-1 rounded-lg inline-block">
-                          {item.suggestion}
+                          {formatSuggestion(item.suggestion, isEn)}
                         </span>
                       </div>
                     </div>

@@ -165,7 +165,7 @@ export function Sidebar() {
               <div className="flex flex-col min-w-0">
                 <span className="font-semibold text-base tracking-tight text-[#334155]">StockPilot</span>
                 <span className="text-[11px] truncate font-normal text-[#64748B]">
-                  {isAdmin ? 'Quản trị nền tảng' : 'Smart Decision Support'}
+                  {isAdmin ? (language === 'en' ? 'Platform Administration' : 'Quản trị nền tảng') : 'Smart Decision Support'}
                 </span>
               </div>
             )}
@@ -177,7 +177,7 @@ export function Sidebar() {
               'p-1.5 rounded-lg lg:hidden transition-all',
               'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
             )}
-            aria-label="Đóng menu"
+            aria-label={language === 'en' ? "Close menu" : "Đóng menu"}
           >
             <X className="w-5 h-5" />
           </button>
@@ -279,7 +279,7 @@ export function Sidebar() {
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium truncate text-[#334155]">
-                  {user?.fullName || user?.name || (isAdmin ? 'Platform Admin' : 'Người dùng')}
+                  {user?.fullName || user?.name || (isAdmin ? 'Platform Admin' : (language === 'en' ? 'User' : 'Người dùng'))}
                 </p>
                 <div className="flex items-center gap-1 text-[11px] mt-0.5">
                   {getRoleIcon(currentRole)}

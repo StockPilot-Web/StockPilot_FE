@@ -109,8 +109,9 @@ export function StaffManagementModal({ isOpen, onClose, isEn }) {
       toast({ type: 'error', title: isEn ? 'Invalid email' : 'Email không hợp lệ', message: isEn ? 'Please enter a valid email address.' : 'Vui lòng nhập địa chỉ email hợp lệ.' });
       return;
     }
-    if (!addPassword || addPassword.length < 6) {
-      toast({ type: 'error', title: isEn ? 'Weak password' : 'Mật khẩu yếu', message: isEn ? 'Password must be at least 6 characters.' : 'Mật khẩu phải có tối thiểu 6 ký tự.' });
+    const cleanPw = addPassword.replace(/\s+/g, '');
+    if (!cleanPw || cleanPw.length < 6) {
+      toast({ type: 'error', title: isEn ? 'Weak password' : 'Mật khẩu yếu', message: isEn ? 'Password must be at least 6 characters and cannot contain spaces.' : 'Mật khẩu phải có tối thiểu 6 ký tự và không chứa khoảng trắng.' });
       return;
     }
 
@@ -119,7 +120,7 @@ export function StaffManagementModal({ isOpen, onClose, isEn }) {
       const created = await apiCreateStaff({
         fullName: addName.trim(),
         email: addEmail.trim(),
-        password: addPassword,
+        password: cleanPw,
       });
 
       toast({
@@ -153,8 +154,9 @@ export function StaffManagementModal({ isOpen, onClose, isEn }) {
       toast({ type: 'error', title: isEn ? 'Invalid email' : 'Email không hợp lệ', message: isEn ? 'Please enter a valid email address.' : 'Vui lòng nhập địa chỉ email hợp lệ.' });
       return;
     }
-    if (editPassword && editPassword.length < 6) {
-      toast({ type: 'error', title: isEn ? 'Weak password' : 'Mật khẩu yếu', message: isEn ? 'New password must be at least 6 characters.' : 'Mật khẩu mới phải có tối thiểu 6 ký tự.' });
+    const cleanEditPw = editPassword ? editPassword.replace(/\s+/g, '') : '';
+    if (editPassword && cleanEditPw.length < 6) {
+      toast({ type: 'error', title: isEn ? 'Weak password' : 'Mật khẩu yếu', message: isEn ? 'New password must be at least 6 characters and cannot contain spaces.' : 'Mật khẩu mới phải có tối thiểu 6 ký tự và không chứa khoảng trắng.' });
       return;
     }
 
@@ -167,8 +169,8 @@ export function StaffManagementModal({ isOpen, onClose, isEn }) {
       if (editEmail.trim() !== selectedStaff.email) {
         payload.email = editEmail.trim();
       }
-      if (editPassword) {
-        payload.password = editPassword;
+      if (cleanEditPw) {
+        payload.password = cleanEditPw;
       }
 
       const updated = await apiUpdateStaff(selectedStaff.id, payload);
@@ -513,7 +515,8 @@ export function StaffManagementModal({ isOpen, onClose, isEn }) {
                         <input
                           type={showEditPassword ? 'text' : 'password'}
                           value={editPassword}
-                          onChange={(e) => setEditPassword(e.target.value)}
+                          onChange={(e) => setEditPassword(e.target.value.replace(/\s+/g, ''))}
+                          onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                           placeholder={isEn ? 'Leave empty to keep current password' : 'Để trống nếu không muốn đổi mật khẩu'}
                           className="w-full pl-9 pr-10 py-2 text-xs font-mono rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:bg-white focus:outline-none focus:border-blue-500"
                         />
@@ -659,7 +662,8 @@ export function StaffManagementModal({ isOpen, onClose, isEn }) {
                         type={showAddPassword ? 'text' : 'password'}
                         required
                         value={addPassword}
-                        onChange={(e) => setAddPassword(e.target.value)}
+                        onChange={(e) => setAddPassword(e.target.value.replace(/\s+/g, ''))}
+                        onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                         className="w-full pl-9 pr-10 py-2 text-xs font-mono rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-emerald-500"
                       />
                       <button

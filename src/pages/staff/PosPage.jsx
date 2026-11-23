@@ -46,6 +46,25 @@ function formatVND(n) {
   return safeNum(n).toLocaleString('vi-VN') + ' đ';
 }
 
+export function getProductStock(p) {
+  if (!p) return 0;
+  if (Array.isArray(p.stockItems) && p.stockItems.length > 0) {
+    const hasBalances = p.stockItems.some((si) => Array.isArray(si.balances) && si.balances.length > 0);
+    if (hasBalances) {
+      return p.stockItems.reduce((acc, si) => {
+        const sum = si.balances?.reduce((s, b) => s + (Number(b.quantity) || 0), 0) ?? 0;
+        return acc + sum;
+      }, 0);
+    }
+    const hasQty = p.stockItems.some((si) => typeof si.quantity === 'number');
+    if (hasQty) {
+      return p.stockItems.reduce((acc, si) => acc + (Number(si.quantity) || 0), 0);
+    }
+  }
+  if (typeof p.stock === 'number' && !isNaN(p.stock)) return p.stock;
+  return 0;
+}
+
 function getPosProductImage(p) {
   if (p?.imageUrl) return p.imageUrl;
   const name = (p?.name || p?.productName || '').toLowerCase();
@@ -132,6 +151,7 @@ export function PosPage() {
   const { t, language } = useTranslation();
   const isEn = language === 'en';
 
+  const searchInputRef = useRef(null);
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [searchProduct, setSearchProduct] = useState('');
@@ -272,7 +292,6 @@ export function PosPage() {
   const reconnectTimeoutRef = useRef(null);
 
   // Add a scanned stock item directly into the active cart tab
-  // Add a scanned stock item directly into the active cart tab
   const addScannedItemToCart = useCallback((payload) => {
     // 1. Find matching product in POS products state or overrides
     const matchedProduct = products.find((p) =>
@@ -280,6 +299,20 @@ export function PosPage() {
       p.stockItems?.some((si) => si.id === payload.stockItemId || (payload.barcode && si.barcode === payload.barcode) || si.sku === payload.sku)
     );
     const applied = matchedProduct;
+
+    const availableStock = applied ? getProductStock(applied) : null;
+    const resolvedName = applied?.name || payload.productName || payload.name;
+
+    if (availableStock !== null && availableStock <= 0) {
+      toast({
+        title: isEn ? 'Product out of stock' : 'Sản phẩm đã hết hàng',
+        description: isEn
+          ? `Product "${resolvedName}" is out of stock!`
+          : `Sản phẩm "${resolvedName}" đã hết hàng trong kho!`,
+        type: 'warning',
+      });
+      return;
+    }
 
     // Priority for image:
     // 1. applied override/product imageUrl
@@ -289,7 +322,6 @@ export function PosPage() {
       || payload.imageUrl 
       || (applied ? getPosProductImage(applied) : getPosProductImage(payload));
 
-    const resolvedName = applied?.name || payload.productName || payload.name;
     const resolvedPrice = Number(applied?.stockItems?.[0]?.sellingPrice || applied?.sellingPrice || payload.sellingPrice || 0);
     const resolvedSku = payload.sku || applied?.code || `SP-${payload.stockItemId}`;
     const resolvedProductId = applied?.id || payload.productId || null;
@@ -298,6 +330,16 @@ export function PosPage() {
       if (t.id !== activeTabId) return t;
       const existing = t.items.findIndex((it) => it.stockItemId === payload.stockItemId);
       if (existing >= 0) {
+        if (availableStock !== null && t.items[existing].quantity >= availableStock) {
+          toast({
+            title: isEn ? 'Stock limit reached' : 'Không đủ tồn kho',
+            description: isEn
+              ? `Only ${availableStock} units available in stock.`
+              : `Trong kho chỉ còn ${availableStock} sản phẩm "${resolvedName}".`,
+            type: 'warning',
+          });
+          return t;
+        }
         const updated = [...t.items];
         updated[existing] = {
           ...updated[existing],
@@ -324,7 +366,7 @@ export function PosPage() {
         ],
       };
     }));
-  }, [activeTabId, products]);
+  }, [activeTabId, products, isEn, toast]);
 
   const openSseStream = useCallback((code) => {
     if (!code) return;
@@ -504,8 +546,10 @@ export function PosPage() {
       const mapped = raw.map((p) => {
         const defaultSi = p.stockItems?.[0] || {};
         const price = safeNum(defaultSi.sellingPrice ?? p.sellingPrice ?? p.salePrice);
+        const stockQty = getProductStock(p);
         return {
           ...p,
+          stock: stockQty,
           sellingPrice: price,
           stockItems: p.stockItems?.map((si) => ({
             ...si,
@@ -629,6 +673,19 @@ export function PosPage() {
   };
 
   const addItemToCart = (product) => {
+    // Check available stock
+    const availableStock = getProductStock(product);
+    if (availableStock <= 0) {
+      toast({
+        title: isEn ? 'Product out of stock' : 'Sản phẩm đã hết hàng',
+        description: isEn
+          ? `Product "${product.name}" is out of stock, cannot add to checkout.`
+          : `Sản phẩm "${product.name}" đã hết hàng, không thể thêm vào đơn thanh toán.`,
+        type: 'warning',
+      });
+      return;
+    }
+
     // Apply latest overrides at the moment of adding
     const defaultStockItem = product.stockItems?.[0] || {};
     const stockItemId = defaultStockItem.id;
@@ -642,6 +699,17 @@ export function PosPage() {
     const sku = defaultStockItem.sku || product.code || `SP-${product.id}`;
     const imgSrc = getPosProductImage(product);
     if (existingIndex >= 0) {
+      const currentQty = currentItems[existingIndex].quantity;
+      if (currentQty >= availableStock) {
+        toast({
+          title: isEn ? 'Stock limit reached' : 'Không đủ số lượng',
+          description: isEn
+            ? `Only ${availableStock} units available in stock.`
+            : `Trong kho chỉ còn ${availableStock} sản phẩm "${product.name}".`,
+          type: 'warning',
+        });
+        return;
+      }
       const updated = [...currentItems];
       updated[existingIndex].quantity += 1;
       updated[existingIndex].subtotal = updated[existingIndex].quantity * price;
@@ -658,8 +726,80 @@ export function PosPage() {
 
   const updateItemQuantity = (stockItemId, newQty) => {
     const qty = Math.max(1, parseInt(newQty, 10) || 1);
+    const matchedProduct = products.find(
+      (p) => p.stockItems?.some((si) => si.id === stockItemId) || p.id === activeTab.items.find((it) => it.stockItemId === stockItemId)?.productId
+    );
+    const availableStock = matchedProduct ? getProductStock(matchedProduct) : Infinity;
+
+    if (availableStock <= 0) {
+      toast({
+        title: isEn ? 'Out of stock' : 'Hết hàng',
+        description: isEn ? 'This product is out of stock.' : 'Sản phẩm này hiện đã hết hàng trong kho.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    if (qty > availableStock) {
+      toast({
+        title: isEn ? 'Stock limit reached' : 'Vượt quá tồn kho',
+        description: isEn
+          ? `Only ${availableStock} items available in stock.`
+          : `Số lượng vượt quá tồn kho khả dụng (${availableStock}).`,
+        type: 'warning',
+      });
+      updateActiveTab({
+        items: activeTab.items.map((it) =>
+          it.stockItemId === stockItemId ? { ...it, quantity: availableStock, subtotal: availableStock * it.price } : it
+        ),
+      });
+      return;
+    }
+
     updateActiveTab({ items: activeTab.items.map((it) => it.stockItemId === stockItemId ? { ...it, quantity: qty, subtotal: qty * it.price } : it) });
   };
+
+  const handleOpenCheckout = useCallback(() => {
+    if (activeTab.items.length === 0) return;
+    const invalidItem = activeTab.items.find((it) => {
+      const matched = products.find(
+        (p) => p.stockItems?.some((si) => si.id === it.stockItemId) || p.id === it.productId
+      );
+      if (!matched) return false;
+      const st = getProductStock(matched);
+      return st <= 0 || it.quantity > st;
+    });
+
+    if (invalidItem) {
+      const matched = products.find(
+        (p) => p.stockItems?.some((si) => si.id === invalidItem.stockItemId) || p.id === invalidItem.productId
+      );
+      const st = matched ? getProductStock(matched) : 0;
+      toast({
+        title: isEn ? 'Cannot checkout' : 'Không thể thanh toán',
+        description: st <= 0
+          ? (isEn ? `Product "${invalidItem.name}" is out of stock. Please remove it from cart.` : `Sản phẩm "${invalidItem.name}" đã hết hàng. Vui lòng xóa khỏi giỏ để thanh toán.`)
+          : (isEn ? `Product "${invalidItem.name}" exceeds available stock (${st}).` : `Sản phẩm "${invalidItem.name}" vượt quá số lượng trong kho (còn ${st}).`),
+        type: 'error',
+      });
+      return;
+    }
+    setIsCheckoutOpen(true);
+  }, [activeTab.items, products, isEn, toast]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'F3') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === 'F9') {
+        e.preventDefault();
+        handleOpenCheckout();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleOpenCheckout]);
 
   const updateItemPrice = (stockItemId, newPrice) => {
     const price = Math.max(0, parseFloat(newPrice) || 0);
@@ -1285,7 +1425,28 @@ export function PosPage() {
                   />
                   <div style={{ minWidth: 0 }}>
                     <p style={{ fontWeight: 800, color: '#1e293b', fontSize: 14, lineHeight: 1.35, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</p>
-                    <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.05em', background: 'hsl(214 30% 95%)', padding: '2px 7px', borderRadius: 5 }}>{item.sku}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.05em', background: 'hsl(214 30% 95%)', padding: '2px 7px', borderRadius: 5 }}>{item.sku}</span>
+                      {(() => {
+                        const matched = products.find((p) => p.stockItems?.some((si) => si.id === item.stockItemId) || p.id === item.productId);
+                        const curStock = matched ? getProductStock(matched) : null;
+                        if (curStock !== null && curStock <= 0) {
+                          return (
+                            <span style={{ fontSize: 10, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+                              {isEn ? 'Out of stock' : 'Đã hết hàng'}
+                            </span>
+                          );
+                        }
+                        if (curStock !== null && item.quantity > curStock) {
+                          return (
+                            <span style={{ fontSize: 10, color: '#d97706', background: '#fffbeb', border: '1px solid #fde68a', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+                              {isEn ? `Max: ${curStock}` : `Tối đa: ${curStock}`}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                   </div>
                 </div>
 
@@ -1408,6 +1569,7 @@ export function PosPage() {
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder={t('searchProductPlaceholder', 'Tìm hàng hóa theo tên, mã SP, barcode (F3)...')}
               value={searchProduct}
@@ -1486,7 +1648,8 @@ export function PosPage() {
               {paginatedProducts.map((p) => {
                 const stockItem = p.stockItems?.[0] || {};
                 const price = Number(stockItem.sellingPrice || p.sellingPrice || 0);
-                const stock = stockItem.balances?.reduce((sum, b) => sum + (b.quantity || 0), 0) ?? 0;
+                const stock = getProductStock(p);
+                const isOutOfStock = stock <= 0;
                 const inCart = activeTab.items.find(it => it.stockItemId === stockItem.id);
                 const imgUrl = getPosProductImage(p);
 
@@ -1494,45 +1657,93 @@ export function PosPage() {
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => addItemToCart(p)}
-                    className={`relative p-2 rounded-xl border text-left flex items-center gap-2.5 transition-all group cursor-pointer ${
-                      inCart
-                        ? 'bg-blue-50/70 border-blue-400 shadow-xs ring-1 ring-blue-400/40'
-                        : 'bg-white border-slate-200/90 hover:border-blue-400 hover:shadow-xs'
+                    disabled={isOutOfStock}
+                    onClick={() => {
+                      if (isOutOfStock) {
+                        toast({
+                          title: isEn ? 'Product out of stock' : 'Sản phẩm đã hết hàng',
+                          description: isEn
+                            ? `"${p.name}" is currently out of stock.`
+                            : `Sản phẩm "${p.name}" hiện đã hết hàng trong kho.`,
+                          type: 'warning',
+                        });
+                        return;
+                      }
+                      addItemToCart(p);
+                    }}
+                    className={`relative p-2 rounded-xl border text-left flex items-center gap-2.5 transition-all group ${
+                      isOutOfStock
+                        ? 'bg-slate-50/80 border-slate-200 opacity-80 cursor-not-allowed select-none'
+                        : inCart
+                        ? 'bg-blue-50/70 border-blue-400 shadow-xs ring-1 ring-blue-400/40 cursor-pointer'
+                        : 'bg-white border-slate-200/90 hover:border-blue-400 hover:shadow-xs cursor-pointer'
                     }`}
                   >
                     {/* In-cart count badge */}
-                    {inCart && (
+                    {!isOutOfStock && inCart && (
                       <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center shadow-xs z-10 animate-in zoom-in-75">
                         {inCart.quantity}
                       </span>
                     )}
 
                     {/* Product Image on the Left */}
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden bg-slate-50 border border-slate-100 p-0.5 flex items-center justify-center">
+                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden bg-white border border-slate-100 p-0.5 flex items-center justify-center">
                       <img
                         src={imgUrl}
                         alt={p.name}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                         onError={(e) => {
                           e.target.src = "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=200&h=200&fit=crop";
                         }}
                       />
+                      {isOutOfStock && (
+                        <div className="absolute bottom-0 inset-x-0 bg-red-600/90 py-0.5 flex items-center justify-center z-10">
+                          <span className="text-white text-[7.5px] sm:text-[8px] font-bold tracking-tight uppercase text-center leading-none">
+                            {isEn ? 'Out of stock' : 'Hết hàng'}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Product Info on the Right */}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60 leading-tight">
+                      <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                        <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded border leading-tight ${
+                          isOutOfStock
+                            ? 'text-slate-400 bg-slate-100 border-slate-200'
+                            : 'text-blue-600 bg-blue-50 border-blue-200/60'
+                        }`}>
                           {p.code || `SP${p.id}`}
                         </span>
+                        {isOutOfStock && (
+                          <span className="text-[9px] sm:text-[10px] font-bold text-red-600 bg-red-50 px-1 py-0.5 rounded border border-red-200/70 leading-none">
+                            {isEn ? 'Out of stock' : 'Hết hàng'}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-xs sm:text-[13px] font-medium text-slate-800 line-clamp-1 leading-tight group-hover:text-blue-600 transition-colors">
+                      <p className={`text-xs sm:text-[13px] font-medium line-clamp-1 leading-tight transition-colors ${
+                        isOutOfStock
+                          ? 'text-slate-400 line-through'
+                          : 'text-slate-800 group-hover:text-blue-600'
+                      }`}>
                         {p.name}
                       </p>
-                      <p className="text-xs sm:text-[13px] font-bold text-blue-600 mt-1">
-                        {Number(price).toLocaleString('vi-VN')}
-                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className={`text-xs sm:text-[13px] font-bold ${
+                          isOutOfStock ? 'text-slate-400' : 'text-blue-600'
+                        }`}>
+                          {Number(price).toLocaleString('vi-VN')}
+                        </p>
+                        {isOutOfStock ? (
+                          <span className="text-[10px] text-red-500 font-bold">
+                            {isEn ? 'Out of stock' : 'Hết hàng'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {isEn ? `Stock: ${stock}` : `Còn: ${stock}`}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 );
@@ -1576,7 +1787,7 @@ export function PosPage() {
           {/* Light Blue THANH TOÁN Button */}
           <button
             type="button"
-            onClick={() => setIsCheckoutOpen(true)}
+            onClick={handleOpenCheckout}
             disabled={activeTab.items.length === 0}
             className="flex-1 py-3 px-6 rounded-2xl border border-blue-200 hover:border-blue-300 active:scale-[0.99] text-blue-700 font-black text-sm sm:text-base tracking-wider uppercase flex items-center justify-center gap-2 shadow-xs hover:shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             style={{
@@ -1627,23 +1838,23 @@ export function PosPage() {
                 style={{ background: 'linear-gradient(135deg, hsl(213 100% 97%) 0%, hsl(221 100% 95%) 100%)', border: '1px solid hsl(217 91% 88%)' }}
               >
                 <div>
-                  <span className="text-[9.5px] text-blue-500 font-bold uppercase tracking-wider block">Khách hàng</span>
-                  <p className="font-bold text-xs text-slate-800 mt-0.5">{activeTab.customer.name || 'Khách lẻ'}</p>
+                  <span className="text-[9.5px] text-blue-500 font-bold uppercase tracking-wider block">{language === 'en' ? 'Customer' : 'Khách hàng'}</span>
+                  <p className="font-bold text-xs text-slate-800 mt-0.5">{activeTab.customer.name === 'Khách lẻ' ? (language === 'en' ? 'Walk-in Customer' : 'Khách lẻ') : (activeTab.customer.name || (language === 'en' ? 'Walk-in Customer' : 'Khách lẻ'))}</p>
                   {activeTab.customer.phone && <p className="text-[11px] text-slate-500">{activeTab.customer.phone}</p>}
                 </div>
                 <span
                   className="text-[11px] font-black px-2 py-1 rounded-lg text-blue-700"
                   style={{ background: 'hsl(213 100% 91%)' }}
                 >
-                  {activeTab.items.length} mặt hàng
+                  {activeTab.items.length} {language === 'en' ? 'items' : 'mặt hàng'}
                 </span>
               </div>
 
               {/* Order Items summary */}
               <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'hsl(214 25% 89%)' }}>
                 <div className="px-3 py-1.5 border-b flex items-center justify-between" style={{ background: 'hsl(214 30% 96%)', borderColor: 'hsl(214 25% 89%)' }}>
-                  <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500">Chi tiết đơn hàng</span>
-                  <span className="text-[10px] text-slate-400 font-medium">({activeTab.items.reduce((s, it) => s + it.quantity, 0)} sản phẩm)</span>
+                  <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500">{language === 'en' ? 'Order Details' : 'Chi tiết đơn hàng'}</span>
+                  <span className="text-[10px] text-slate-400 font-medium">({activeTab.items.reduce((s, it) => s + it.quantity, 0)} {language === 'en' ? 'items' : 'sản phẩm'})</span>
                 </div>
                 <div className="divide-y max-h-[180px] overflow-y-auto" style={{ divideColor: 'hsl(214 25% 92%)' }}>
                   {activeTab.items.map((it) => (
@@ -1661,12 +1872,12 @@ export function PosPage() {
               {/* Payment summary */}
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>Tổng tiền hàng</span>
+                  <span>{language === 'en' ? 'Subtotal' : 'Tổng tiền hàng'}</span>
                   <span className="font-semibold text-slate-800 money">{formatVND(subtotalAmount)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Giảm giá</span>
+                  <span className="text-slate-600">{language === 'en' ? 'Discount' : 'Giảm giá'}</span>
                   <div className="w-28">
                     <input
                       type="number"
@@ -1686,12 +1897,12 @@ export function PosPage() {
                     borderColor: '#bfdbfe',
                   }}
                 >
-                  <span className="font-bold text-blue-900 text-xs">Khách cần trả</span>
+                  <span className="font-bold text-blue-900 text-xs">{language === 'en' ? 'Amount Due' : 'Khách cần trả'}</span>
                   <span className="text-xl font-black text-blue-700 money">{formatVND(totalPayable)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-slate-700 text-xs">Khách thanh toán</span>
+                  <span className="font-medium text-slate-700 text-xs">{language === 'en' ? 'Tendered' : 'Khách thanh toán'}</span>
                   <div className="w-36">
                     <input
                       type="number"
@@ -1723,21 +1934,21 @@ export function PosPage() {
                 </div>
 
                 <div className="flex justify-between items-center pt-0.5">
-                  <span className="text-slate-600">Tiền thừa trả khách</span>
+                  <span className="text-slate-600">{language === 'en' ? 'Change Due' : 'Tiền thừa trả khách'}</span>
                   <span className={`font-black text-sm money ${changeDue >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {changeDue >= 0 ? formatVND(changeDue) : `Thiếu ${formatVND(Math.abs(changeDue))}`}
+                    {changeDue >= 0 ? formatVND(changeDue) : (language === 'en' ? `Short ${formatVND(Math.abs(changeDue))}` : `Thiếu ${formatVND(Math.abs(changeDue))}`)}
                   </span>
                 </div>
               </div>
 
               {/* Payment methods */}
               <div className="space-y-1.5 pt-0.5">
-                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500 block">Phương thức thanh toán</span>
+                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500 block">{language === 'en' ? 'Payment Method' : 'Phương thức thanh toán'}</span>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { id: 'CASH', label: 'Tiền mặt', icon: Banknote },
+                    { id: 'CASH', label: language === 'en' ? 'Cash' : 'Tiền mặt', icon: Banknote },
                     { id: 'BANK_TRANSFER', label: 'VietQR PayOS', icon: QrCode },
-                    { id: 'MOMO', label: 'Ví MoMo', icon: Smartphone },
+                    { id: 'MOMO', label: language === 'en' ? 'MoMo Wallet' : 'Ví MoMo', icon: Smartphone },
                   ].map((m) => {
                     const Icon = m.icon;
                     const isSelected = paymentMethod === m.id;
@@ -1789,7 +2000,7 @@ export function PosPage() {
                 }}
               >
                 <Printer className="w-4 h-4 text-blue-600" />
-                {isProcessing ? 'Đang xử lý...' : 'THANH TOÁN & IN HÓA ĐƠN'}
+                {isProcessing ? (language === 'en' ? 'Processing...' : 'Đang xử lý...') : (language === 'en' ? 'PAY & PRINT RECEIPT' : 'THANH TOÁN & IN HÓA ĐƠN')}
               </button>
 
               <button
@@ -1798,7 +2009,7 @@ export function PosPage() {
                 className="w-full py-1.5 rounded-xl border text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-all disabled:opacity-50 cursor-pointer"
                 style={{ borderColor: 'hsl(214 25% 87%)' }}
               >
-                Chỉ thanh toán (Không in)
+                {language === 'en' ? 'Pay only (No Print)' : 'Chỉ thanh toán (Không in)'}
               </button>
             </div>
           </div>
@@ -1817,8 +2028,8 @@ export function PosPage() {
               style={{ background: 'linear-gradient(180deg, #f8fafd 0%, #f1f5fb 100%)', borderColor: 'hsl(214 25% 89%)' }}
             >
               <div>
-                <h3 className="font-black text-sm text-slate-900">Thêm thông tin khách hàng</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Lưu thông tin để ghi vào hóa đơn</p>
+                <h3 className="font-black text-sm text-slate-900">{language === 'en' ? 'Add Customer Details' : 'Thêm thông tin khách hàng'}</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">{language === 'en' ? 'Save details to record on invoice' : 'Lưu thông tin để ghi vào hóa đơn'}</p>
               </div>
               <button onClick={() => setIsAddCustomerOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
                 <X className="w-4 h-4" />
@@ -1827,17 +2038,17 @@ export function PosPage() {
 
             <div className="p-5 space-y-3.5">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Tên khách hàng <span className="text-red-500">*</span></label>
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">{language === 'en' ? 'Customer Name' : 'Tên khách hàng'} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: Anh Hoàng Nam"
+                  placeholder={language === 'en' ? 'E.g., John Smith' : 'Ví dụ: Anh Hoàng Nam'}
                   value={custNameInput}
                   onChange={(e) => setCustNameInput(e.target.value)}
                   className="w-full p-2.5 border border-slate-200 rounded-lg bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Số điện thoại</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">{language === 'en' ? 'Phone Number' : 'Số điện thoại'}</label>
                 <input
                   type="text"
                   placeholder="Ví dụ: 0987654321"
@@ -1859,7 +2070,7 @@ export function PosPage() {
               <button
                 onClick={() => {
                   if (!custNameInput.trim()) {
-                    toast({ title: 'Thiếu thông tin', description: 'Vui lòng nhập tên khách hàng', type: 'error' });
+                    toast({ title: language === 'en' ? 'Missing information' : 'Thiếu thông tin', description: language === 'en' ? 'Please enter customer name' : 'Vui lòng nhập tên khách hàng', type: 'error' });
                     return;
                   }
                   updateActiveTab({ customer: { name: custNameInput.trim(), phone: custPhoneInput.trim() } });

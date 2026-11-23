@@ -26,12 +26,13 @@ function slugify(str) {
 
 function getPasswordStrength(pw, isEn) {
   if (!pw) return { score: 0, label: '', color: '' };
+  const clean = pw.replace(/\s/g, '');
   let score = 0;
-  if (pw.length >= 8)  score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/[a-z]/.test(pw)) score++;
-  if (/[0-9]/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (clean.length >= 8)  score++;
+  if (/[A-Z]/.test(clean)) score++;
+  if (/[a-z]/.test(clean)) score++;
+  if (/[0-9]/.test(clean)) score++;
+  if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(clean)) score++;
 
   if (score <= 1) return { score, label: isEn ? 'Very weak' : 'Quá yếu', color: 'bg-red-500' };
   if (score === 2) return { score, label: isEn ? 'Weak' : 'Yếu', color: 'bg-orange-400' };
@@ -87,7 +88,8 @@ function PasswordInput({ id, placeholder, value, onChange, showMatch }) {
         type={show ? 'text' : 'password'}
         placeholder={placeholder}
         value={value}
-        onChange={onChange}
+        onChange={(e) => onChange(e.target.value.replace(/\s+/g, ''))}
+        onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
         className="w-full pl-10 pr-10 py-2.5 bg-slate-50 text-slate-900 text-sm rounded-xl border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 font-medium"
       />
       {showMatch && (
@@ -113,11 +115,12 @@ function StepAccount({ form, errors, onChange, isEn }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const strength = useMemo(() => getPasswordStrength(form.password, isEn), [form.password, isEn]);
 
+  const cleanPw = (form.password || '').replace(/\s/g, '');
   const checks = [
-    { ok: form.password.length >= 8,         text: isEn ? 'At least 8 characters' : 'Ít nhất 8 ký tự' },
-    { ok: /[A-Z]/.test(form.password),        text: isEn ? 'Uppercase letter (A-Z)' : 'Có chữ hoa (A-Z)' },
-    { ok: /[0-9]/.test(form.password),        text: isEn ? 'Number (0-9)' : 'Có chữ số (0-9)' },
-    { ok: /[^A-Za-z0-9]/.test(form.password), text: isEn ? 'Special symbol (!@#...)' : 'Có ký tự đặc biệt (!@#...)' },
+    { ok: cleanPw.length >= 8,         text: isEn ? 'At least 8 characters (no spaces)' : 'Ít nhất 8 ký tự (không khoảng trắng)' },
+    { ok: /[A-Z]/.test(cleanPw),        text: isEn ? 'Uppercase letter (A-Z)' : 'Có chữ hoa (A-Z)' },
+    { ok: /[0-9]/.test(cleanPw),        text: isEn ? 'Number (0-9)' : 'Có chữ số (0-9)' },
+    { ok: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(cleanPw), text: isEn ? 'Special symbol (!@#...)' : 'Có ký tự đặc biệt (!@#...)' },
   ];
 
   return (
@@ -183,7 +186,8 @@ function StepAccount({ form, errors, onChange, isEn }) {
             type="text"
             placeholder={isEn ? 'owner@store.com' : 'chushop@cuahang.vn'}
             value={form.email}
-            onChange={(e) => onChange('email', e.target.value)}
+            onChange={(e) => onChange('email', e.target.value.replace(/\s+/g, ''))}
+            onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
           />
         </Field>
 
@@ -199,7 +203,8 @@ function StepAccount({ form, errors, onChange, isEn }) {
             type={showPw ? 'text' : 'password'}
             placeholder={isEn ? 'At least 8 characters' : 'Tối thiểu 8 ký tự'}
             value={form.password}
-            onChange={(e) => onChange('password', e.target.value)}
+            onChange={(e) => onChange('password', e.target.value.replace(/\s+/g, ''))}
+            onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
             className="w-full pl-10 pr-10 py-2.5 bg-slate-50 text-slate-900 text-sm rounded-xl border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 font-medium"
           />
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -273,7 +278,8 @@ function StepAccount({ form, errors, onChange, isEn }) {
             type={showConfirm ? 'text' : 'password'}
             placeholder={isEn ? 'Re-enter password to confirm' : 'Nhập lại mật khẩu để xác nhận'}
             value={form.confirmPassword}
-            onChange={(e) => onChange('confirmPassword', e.target.value)}
+            onChange={(e) => onChange('confirmPassword', e.target.value.replace(/\s+/g, ''))}
+            onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
             className="w-full pl-10 pr-10 py-2.5 bg-slate-50 text-slate-900 text-sm rounded-xl border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 font-medium"
           />
           <button
@@ -480,8 +486,11 @@ export function RegisterPage() {
     if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) {
       errs.email = isEn ? 'Invalid email address' : 'Địa chỉ email không hợp lệ';
     }
-    if (form.password.length < 8) {
-      errs.password = isEn ? 'Password must be at least 8 characters' : 'Mật khẩu phải có ít nhất 8 ký tự';
+    const cleanPw = form.password ? form.password.replace(/\s/g, '') : '';
+    if (!cleanPw || cleanPw.length < 8) {
+      errs.password = isEn ? 'Password must be at least 8 characters (no spaces)' : 'Mật khẩu phải có ít nhất 8 ký tự (không khoảng trắng)';
+    } else if (/\s/.test(form.password)) {
+      errs.password = isEn ? 'Password cannot contain spaces' : 'Mật khẩu không được chứa khoảng trắng';
     }
     if (form.password !== form.confirmPassword) {
       errs.confirmPassword = isEn ? 'Passwords do not match' : 'Mật khẩu xác nhận chưa khớp';

@@ -6,7 +6,7 @@ import {
   Calendar, ShoppingBag, X, ZoomIn, Check, Info, Ban, CheckCircle2,
   Store, ChevronRight, Pencil, Upload, Camera, FileUp
 } from "lucide-react";
-import { useProductStore, CATEGORIES } from "../../components/store/productStore";
+import { useProductStore, CATEGORIES, formatCategoryName } from "../../components/store/productStore";
 import { useAuthStore } from "../../store/authStore";
 import { canViewCostPrice, canDeleteProduct, normalizeRole } from "../../config/permissions.config";
 import { Link, useSearchParams } from "react-router-dom";
@@ -34,25 +34,25 @@ function formatVND(val) {
   return safeNum(val).toLocaleString("vi-VN") + " ₫";
 }
 
-function getCategoryBadge(category) {
+function getCategoryBadge(category, isEn = false) {
   const catKey = (typeof category === "string" ? category : category?.code || "").toLowerCase();
   const map = {
-    tpcn: { label: "Thực phẩm", icon: "🍞", color: "#059669", bg: "#ecfdf5", border: "#a7f3d0", gradient: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" },
-    drink: { label: "Đồ uống", icon: "☕", color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", gradient: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)" },
-    spice: { label: "Gia vị", icon: "🧂", color: "#d97706", bg: "#fffbeb", border: "#fde68a", gradient: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)" },
-    house: { label: "Gia dụng", icon: "🧹", color: "#4f46e5", bg: "#eef2ff", border: "#c7d2fe", gradient: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)" },
-    care: { label: "Chăm sóc", icon: "🧴", color: "#db2777", bg: "#fdf2f8", border: "#fbcfe8", gradient: "linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)" },
-    tech: { label: "Điện tử", icon: "🔌", color: "#0284c7", bg: "#f0f9ff", border: "#bae6fd", gradient: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)" },
-    office: { label: "Văn phòng", icon: "📎", color: "#0891b2", bg: "#ecfeff", border: "#a5f3fc", gradient: "linear-gradient(135deg, #ecfeff 0%, #cffafe 100%)" },
-    misc: { label: "Tiêu dùng", icon: "📦", color: "#475569", bg: "#f8fafc", border: "#cbd5e1", gradient: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)" },
-    "thuc-pham": { label: "Thực phẩm", icon: "🍞", color: "#059669", bg: "#ecfdf5", border: "#a7f3d0", gradient: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" },
-    "do-an": { label: "Thực phẩm", icon: "🍞", color: "#059669", bg: "#ecfdf5", border: "#a7f3d0", gradient: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" },
-    "do-uong": { label: "Đồ uống", icon: "☕", color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", gradient: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)" },
-    "gia-vi": { label: "Gia vị", icon: "🧂", color: "#d97706", bg: "#fffbeb", border: "#fde68a", gradient: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)" },
-    "gia-dinh": { label: "Gia dụng", icon: "🧹", color: "#4f46e5", bg: "#eef2ff", border: "#c7d2fe", gradient: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)" },
-    "ca-nhan": { label: "Chăm sóc", icon: "🧴", color: "#db2777", bg: "#fdf2f8", border: "#fbcfe8", gradient: "linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)" },
+    tpcn: { label: isEn ? "Food" : "Thực phẩm", icon: "🍞", color: "#059669", bg: "#ecfdf5", border: "#a7f3d0", gradient: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" },
+    drink: { label: isEn ? "Beverages" : "Đồ uống", icon: "☕", color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", gradient: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)" },
+    spice: { label: isEn ? "Spices" : "Gia vị", icon: "🧂", color: "#d97706", bg: "#fffbeb", border: "#fde68a", gradient: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)" },
+    house: { label: isEn ? "Household" : "Gia dụng", icon: "🧹", color: "#4f46e5", bg: "#eef2ff", border: "#c7d2fe", gradient: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)" },
+    care: { label: isEn ? "Personal Care" : "Chăm sóc", icon: "🧴", color: "#db2777", bg: "#fdf2f8", border: "#fbcfe8", gradient: "linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)" },
+    tech: { label: isEn ? "Electronics" : "Điện tử", icon: "🔌", color: "#0284c7", bg: "#f0f9ff", border: "#bae6fd", gradient: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)" },
+    office: { label: isEn ? "Office" : "Văn phòng", icon: "📎", color: "#0891b2", bg: "#ecfeff", border: "#a5f3fc", gradient: "linear-gradient(135deg, #ecfeff 0%, #cffafe 100%)" },
+    misc: { label: isEn ? "Consumables" : "Tiêu dùng", icon: "📦", color: "#475569", bg: "#f8fafc", border: "#cbd5e1", gradient: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)" },
+    "thuc-pham": { label: isEn ? "Food" : "Thực phẩm", icon: "🍞", color: "#059669", bg: "#ecfdf5", border: "#a7f3d0", gradient: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" },
+    "do-an": { label: isEn ? "Food" : "Thực phẩm", icon: "🍞", color: "#059669", bg: "#ecfdf5", border: "#a7f3d0", gradient: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" },
+    "do-uong": { label: isEn ? "Beverages" : "Đồ uống", icon: "☕", color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", gradient: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)" },
+    "gia-vi": { label: isEn ? "Spices" : "Gia vị", icon: "🧂", color: "#d97706", bg: "#fffbeb", border: "#fde68a", gradient: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)" },
+    "gia-dinh": { label: isEn ? "Household" : "Gia dụng", icon: "🧹", color: "#4f46e5", bg: "#eef2ff", border: "#c7d2fe", gradient: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)" },
+    "ca-nhan": { label: isEn ? "Personal Care" : "Chăm sóc", icon: "🧴", color: "#db2777", bg: "#fdf2f8", border: "#fbcfe8", gradient: "linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)" },
   };
-  return map[catKey] || { label: "Hàng hóa", icon: "📦", color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", gradient: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)" };
+  return map[catKey] || { label: isEn ? "Goods" : "Hàng hóa", icon: "📦", color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe", gradient: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)" };
 }
 
 function getProductImage(prod) {
@@ -926,12 +926,13 @@ const PAGE_CSS = `
 `;
 
 function ProductCard({ prod, onZoom, onEdit, onDelete, onDetail }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const isEn = language === 'en';
   const { user } = useAuthStore();
   const canSeeCost = canViewCostPrice(user?.role);
   const canDelete = canDeleteProduct(user?.role);
 
-  const badge = getCategoryBadge(prod.category);
+  const badge = getCategoryBadge(prod.category, isEn);
   const isLow = prod.stock > 0 && prod.stock <= (prod.alertThreshold || 10);
   const isOut = prod.stock === 0;
   const marginPct = canSeeCost && prod.salePrice && prod.costPrice && prod.salePrice > prod.costPrice
@@ -1038,7 +1039,7 @@ function ProductCard({ prod, onZoom, onEdit, onDelete, onDetail }) {
               gap: 4,
             }}
           >
-            <Ban style={{ width: 12, height: 12 }} /> Ngưng bán
+            <Ban style={{ width: 12, height: 12 }} /> {isEn ? 'Inactive' : 'Ngưng bán'}
           </div>
         ) : null}
 
@@ -1046,10 +1047,10 @@ function ProductCard({ prod, onZoom, onEdit, onDelete, onDetail }) {
         <div className={`pp-tag-stock${isOut ? " out" : isLow ? " low" : ""}`}>
           <span>
             {isOut
-              ? t('outOfStock', 'Hết hàng')
+              ? (isEn ? 'Out of Stock' : t('outOfStock', 'Hết hàng'))
               : isLow
-              ? `${t('lowStock', 'Còn')} ${prod.stock}`
-              : `${t('tableStock', 'Tồn kho')}: ${prod.stock}`}
+              ? `${isEn ? 'Left' : t('lowStock', 'Còn')} ${prod.stock}`
+              : `${isEn ? 'Stock' : t('tableStock', 'Tồn kho')}: ${prod.stock}`}
           </span>
         </div>
 
@@ -1075,7 +1076,7 @@ function ProductCard({ prod, onZoom, onEdit, onDelete, onDetail }) {
             <span>{badge.icon}</span>
             <span>{badge.label}</span>
           </span>
-          <span className="pp-card-sku-badge" title="Mã sản phẩm / SKU">
+          <span className="pp-card-sku-badge" title={isEn ? "Product code / SKU" : "Mã sản phẩm / SKU"}>
             {prod.code || prod.sku || `SP${prod.id}`}
           </span>
         </div>
@@ -1147,6 +1148,7 @@ function ProductCard({ prod, onZoom, onEdit, onDelete, onDetail }) {
 
 export function ProductsPage() {
   const { t, language } = useTranslation();
+  const isEn = language === 'en';
   const { user } = useAuthStore();
   const canSeeCost = canViewCostPrice(user?.role);
   const canDelete = canDeleteProduct(user?.role);
@@ -1344,9 +1346,9 @@ export function ProductsPage() {
       { key: "all", label: t('catAll', 'Tất cả'), count: products.length },
       ...[...counts.entries()]
         .sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], "vi"))
-        .map(([name, count]) => ({ key: name, label: name, count })),
+        .map(([name, count]) => ({ key: name, label: formatCategoryName(name, isEn), count })),
     ];
-  }, [products, t]);
+  }, [products, t, isEn]);
 
   if (viewMode === "add") {
     return (
@@ -1384,7 +1386,7 @@ export function ProductsPage() {
           </button>
           {normalizeRole(user?.role) === "store_owner" && (
             <Link to="/import?type=PRODUCTS" className="pp-btn-refresh" style={{ textDecoration: "none" }}>
-              <FileUp style={{ width: 14, height: 14 }} /> {t('importFromFile', 'Nhập từ file')}
+              <FileUp style={{ width: 14, height: 14 }} /> {isEn ? 'Import from file' : t('importFromFile', 'Nhập từ file')}
             </Link>
           )}
           <button className="pp-btn-add" onClick={() => setViewMode("add")}>
@@ -1402,7 +1404,7 @@ export function ProductsPage() {
           </div>
           <div>
             <div className="pp-stat-label">{t('productsTotal', 'TỔNG MẶT HÀNG')}</div>
-            <div className="pp-stat-value">{stats.total} {t('itemsCount', 'SP')}</div>
+            <div className="pp-stat-value">{stats.total} {isEn ? 'items' : t('itemsCount', 'SP')}</div>
           </div>
         </div>
 
@@ -1412,8 +1414,8 @@ export function ProductsPage() {
             <RedLightningLogo style={{ width: 28, height: 29, color: "#c31c2e" }} />
           </div>
           <div>
-            <div className="pp-stat-label">{t('productsOutOfStock', 'HẾT HÀNG')}</div>
-            <div className="pp-stat-value">{stats.outOfStock} {t('itemsCount', 'SP')}</div>
+            <div className="pp-stat-label">{isEn ? 'OUT OF STOCK' : t('productsOutOfStock', 'HẾT HÀNG')}</div>
+            <div className="pp-stat-value">{stats.outOfStock} {isEn ? 'items' : t('itemsCount', 'SP')}</div>
           </div>
         </div>
 
@@ -1424,7 +1426,7 @@ export function ProductsPage() {
           </div>
           <div>
             <div className="pp-stat-label">{t('productsLowStock', 'CẢNH BÁO SẮP HẾT')}</div>
-            <div className="pp-stat-value">{stats.lowStock} {t('itemsCount', 'SP')}</div>
+            <div className="pp-stat-value">{stats.lowStock} {isEn ? 'items' : t('itemsCount', 'SP')}</div>
           </div>
         </div>
 
@@ -1452,7 +1454,7 @@ export function ProductsPage() {
             <span>{t('categorySection', 'DANH MỤC NGÀNH HÀNG')}</span>
           </div>
           <div className="pp-cat-count-badge">
-            {filteredProducts.length} {t('matchingProducts', 'sản phẩm phù hợp')}
+            {filteredProducts.length} {isEn ? 'matching products' : t('matchingProducts', 'sản phẩm phù hợp')}
           </div>
         </div>
 
@@ -1476,7 +1478,7 @@ export function ProductsPage() {
           {[
             { key: "all", label: t('tabAll', 'Tất cả') },
             { key: "active", label: t('tabActive', 'Đang bán') },
-            { key: "inactive", label: 'Ngưng bán' },
+            { key: "inactive", label: isEn ? 'Inactive' : t('tabInactive', 'Ngưng bán') },
             { key: "low_stock", label: t('tabLowStock', 'Sắp hết') },
             { key: "out_of_stock", label: t('tabOutOfStock', 'Hết hàng') },
           ].map((tab) => (
@@ -1511,7 +1513,7 @@ export function ProductsPage() {
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
         >
-          <option value="code_asc">Mã sản phẩm (từ 1 trở đi)</option>
+          <option value="code_asc">{isEn ? 'Product code (1 onwards)' : t('sortCodeAsc', 'Mã sản phẩm (từ 1 trở đi)')}</option>
           <option value="newest">{t('sortNewest', 'Mới nhất')}</option>
           <option value="price_asc">{t('sortPriceAsc', 'Giá thấp → cao')}</option>
           <option value="price_desc">{t('sortPriceDesc', 'Giá cao → thấp')}</option>
@@ -1599,7 +1601,7 @@ export function ProductsPage() {
               </thead>
               <tbody>
                 {filteredProducts.map((prod) => {
-                  const badge = getCategoryBadge(prod.category);
+                  const badge = getCategoryBadge(prod.category, isEn);
                   const isLow = prod.stock > 0 && prod.stock <= (prod.alertThreshold || 5);
                   const isOut = prod.stock === 0;
                   const imgSrc = getProductImage(prod);
@@ -1676,7 +1678,7 @@ export function ProductsPage() {
                             cursor: "pointer",
                           }}
                         >
-                          {prod.status === "active" && prod.isActive !== false ? t('statusSelling', 'Đang bán') : 'Ngưng bán'}
+                          {prod.status === "active" && prod.isActive !== false ? (isEn ? 'Selling' : t('statusSelling', 'Đang bán')) : (isEn ? 'Inactive' : 'Ngưng bán')}
                         </button>
                       </td>
                       <td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>

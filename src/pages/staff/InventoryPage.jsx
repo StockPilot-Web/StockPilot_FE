@@ -20,6 +20,20 @@ function fmtDate(d, isEn = false) {
   if (!d) return '—';
   return new Date(d).toLocaleString(isEn ? 'en-US' : 'vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 }
+function formatMovementNote(note, isEn = false) {
+  if (!note || !isEn) return note || '—';
+  return String(note)
+    .replace(/Nhập kho thủ công/g, 'Manual stock inflow')
+    .replace(/Xuất kho thủ công/g, 'Manual stock outflow')
+    .replace(/Điều chỉnh tồn kho/g, 'Inventory adjustment')
+    .replace(/Kiểm kê kho thực tế/g, 'Physical stocktake audit')
+    .replace(/Xuất bán lẻ/g, 'Retail sale')
+    .replace(/Xuất sỉ \/ đại lý/g, 'Wholesale')
+    .replace(/Xuất hủy hàng hỏng \/ hết hạn/g, 'Damaged / Expired disposal')
+    .replace(/Hàng mẫu trưng bày/g, 'Display sample')
+    .replace(/Xuất nội bộ \/ sử dụng/g, 'Internal use')
+    .replace(/Xuất chênh lệch kiểm kê/g, 'Stocktake variance');
+}
 function movTypeBadge(type, isEn = false) {
   const map = {
     INFLOW: { label: isEn ? 'Inflow' : 'Nhập kho', cls: 'bg-emerald-100 text-emerald-800' },
@@ -190,62 +204,106 @@ export function InventoryPage() {
   const handleStockIn = async () => {
     const stockItemId = getStockItemId(selProductId);
     if (!stockItemId || !qty || Number(qty) <= 0) {
-      toast({ type: 'warning', title: 'Thiếu thông tin', message: 'Vui lòng chọn sản phẩm và nhập số lượng > 0.' });
+      toast({
+        type: 'warning',
+        title: isEn ? 'Missing information' : 'Thiếu thông tin',
+        message: isEn ? 'Please select a product and enter a quantity > 0.' : 'Vui lòng chọn sản phẩm và nhập số lượng > 0.',
+      });
       return;
     }
     setSaving(true);
     try {
-      await stockIn({ items: [{ stockItemId, quantity: Number(qty) }], note: note || 'Nhập kho thủ công' });
+      await stockIn({ items: [{ stockItemId, quantity: Number(qty) }], note: note || (isEn ? 'Manual stock inflow' : 'Nhập kho thủ công') });
       await fetchProducts();
-      toast({ type: 'success', title: 'Nhập kho thành công', message: `Đã nhập thêm ${qty} ${selProduct?.unit||''} vào kho.` });
+      toast({
+        type: 'success',
+        title: isEn ? 'Stock received' : 'Nhập kho thành công',
+        message: isEn ? `Added ${qty} ${formatUnit(selProduct?.unit, isEn)} to inventory.` : `Đã nhập thêm ${qty} ${selProduct?.unit||''} vào kho.`,
+      });
       closeModal();
     } catch (err) {
-      toast({ type: 'error', title: 'Lỗi nhập kho', message: err?.response?.data?.error?.message || err?.message || 'Không thể nhập kho.' });
+      toast({
+        type: 'error',
+        title: isEn ? 'Stock In error' : 'Lỗi nhập kho',
+        message: err?.response?.data?.error?.message || err?.message || (isEn ? 'Failed to receive stock.' : 'Không thể nhập kho.'),
+      });
     } finally { setSaving(false); }
   };
 
   const handleStockOut = async () => {
     const stockItemId = getStockItemId(selProductId);
     if (!stockItemId || !qty || Number(qty) <= 0) {
-      toast({ type: 'warning', title: 'Thiếu thông tin', message: 'Vui lòng chọn sản phẩm và nhập số lượng > 0.' });
+      toast({
+        type: 'warning',
+        title: isEn ? 'Missing information' : 'Thiếu thông tin',
+        message: isEn ? 'Please select a product and enter a quantity > 0.' : 'Vui lòng chọn sản phẩm và nhập số lượng > 0.',
+      });
       return;
     }
     if (selProduct && Number(qty) > selProduct.stock) {
-      toast({ type: 'warning', title: 'Vượt tồn kho', message: `Tồn hiện tại chỉ còn ${selProduct.stock} ${selProduct.unit||''}.` });
+      toast({
+        type: 'warning',
+        title: isEn ? 'Exceeds stock' : 'Vượt tồn kho',
+        message: isEn ? `Current stock is only ${selProduct.stock} ${formatUnit(selProduct.unit, isEn)}.` : `Tồn hiện tại chỉ còn ${selProduct.stock} ${selProduct.unit||''}.`,
+      });
       return;
     }
     setSaving(true);
     try {
       await stockOut({ items: [{ stockItemId, quantity: Number(qty) }], note: `${outReason}${note ? ': ' + note : ''}` });
       await fetchProducts();
-      toast({ type: 'success', title: 'Xuất kho thành công', message: `Đã xuất ${qty} ${selProduct?.unit||''} khỏi kho.` });
+      toast({
+        type: 'success',
+        title: isEn ? 'Stock issued' : 'Xuất kho thành công',
+        message: isEn ? `Dispatched ${qty} ${formatUnit(selProduct?.unit, isEn)} from inventory.` : `Đã xuất ${qty} ${selProduct?.unit||''} khỏi kho.`,
+      });
       closeModal();
     } catch (err) {
-      toast({ type: 'error', title: 'Lỗi xuất kho', message: err?.response?.data?.error?.message || err?.message || 'Không thể xuất kho.' });
+      toast({
+        type: 'error',
+        title: isEn ? 'Stock Out error' : 'Lỗi xuất kho',
+        message: err?.response?.data?.error?.message || err?.message || (isEn ? 'Failed to issue stock.' : 'Không thể xuất kho.'),
+      });
     } finally { setSaving(false); }
   };
 
   const handleAdjust = async () => {
     const stockItemId = getStockItemId(selProductId);
     if (!stockItemId || qty === '' || Number(qty) < 0) {
-      toast({ type: 'warning', title: 'Thiếu thông tin', message: 'Vui lòng chọn sản phẩm và nhập số tồn mới >= 0.' });
+      toast({
+        type: 'warning',
+        title: isEn ? 'Missing information' : 'Thiếu thông tin',
+        message: isEn ? 'Please select a product and enter new stock count >= 0.' : 'Vui lòng chọn sản phẩm và nhập số tồn mới >= 0.',
+      });
       return;
     }
     setSaving(true);
     try {
-      await stockAdjustment({ items: [{ stockItemId, countedQuantity: Number(qty) }], note: note || 'Điều chỉnh tồn kho' });
+      await stockAdjustment({ items: [{ stockItemId, countedQuantity: Number(qty) }], note: note || (isEn ? 'Inventory adjustment' : 'Điều chỉnh tồn kho') });
       await fetchProducts();
-      toast({ type: 'success', title: 'Điều chỉnh thành công', message: `Số tồn đã được cập nhật thành ${qty} ${selProduct?.unit||''}.` });
+      toast({
+        type: 'success',
+        title: isEn ? 'Adjustment completed' : 'Điều chỉnh thành công',
+        message: isEn ? `Stock count updated to ${qty} ${formatUnit(selProduct?.unit, isEn)}.` : `Số tồn đã được cập nhật thành ${qty} ${selProduct?.unit||''}.`,
+      });
       closeModal();
     } catch (err) {
-      toast({ type: 'error', title: 'Lỗi điều chỉnh', message: err?.response?.data?.error?.message || err?.message || 'Không thể điều chỉnh tồn.' });
+      toast({
+        type: 'error',
+        title: isEn ? 'Adjustment error' : 'Lỗi điều chỉnh',
+        message: err?.response?.data?.error?.message || err?.message || (isEn ? 'Failed to adjust stock.' : 'Không thể điều chỉnh tồn.'),
+      });
     } finally { setSaving(false); }
   };
 
   const handleStockTake = async () => {
     const keys = Object.keys(takeCounts).filter(id => takeCounts[id] !== '' && takeCounts[id] !== undefined);
     if (keys.length === 0) {
-      toast({ type: 'info', title: 'Chưa có thay đổi', message: 'Nhập số đếm thực tế cho ít nhất 1 sản phẩm.' });
+      toast({
+        type: 'info',
+        title: isEn ? 'No changes' : 'Chưa có thay đổi',
+        message: isEn ? 'Enter physical count for at least 1 product.' : 'Nhập số đếm thực tế cho ít nhất 1 sản phẩm.',
+      });
       return;
     }
     setSaving(true);
@@ -257,13 +315,21 @@ export function InventoryPage() {
           items.push({ stockItemId, countedQuantity: Number(takeCounts[productId]) });
         }
       }
-      if (items.length === 0) throw new Error('Không lấy được stockItemId cho sản phẩm đã chọn');
-      await stockAdjustment({ items, note: 'Kiểm kê kho thực tế' });
+      if (items.length === 0) throw new Error(isEn ? 'Could not retrieve stock item ID for selected products' : 'Không lấy được stockItemId cho sản phẩm đã chọn');
+      await stockAdjustment({ items, note: isEn ? 'Physical stocktake audit' : 'Kiểm kê kho thực tế' });
       await fetchProducts();
       setTakeCounts({});
-      toast({ type: 'success', title: 'Hoàn tất kiểm kê', message: `Đã đồng bộ ${items.length} mặt hàng theo số đếm thực tế.` });
+      toast({
+        type: 'success',
+        title: isEn ? 'Stocktake completed' : 'Hoàn tất kiểm kê',
+        message: isEn ? `Synchronized ${items.length} items with physical count.` : `Đã đồng bộ ${items.length} mặt hàng theo số đếm thực tế.`,
+      });
     } catch (err) {
-      toast({ type: 'error', title: 'Lỗi kiểm kê', message: err?.response?.data?.error?.message || err?.message || 'Không thể thực hiện kiểm kê.' });
+      toast({
+        type: 'error',
+        title: isEn ? 'Stocktake error' : 'Lỗi kiểm kê',
+        message: err?.response?.data?.error?.message || err?.message || (isEn ? 'Failed to perform stocktake.' : 'Không thể thực hiện kiểm kê.'),
+      });
     } finally { setSaving(false); }
   };
 
@@ -310,7 +376,7 @@ export function InventoryPage() {
           <div className="inv-kpi-icon" style={{ background: '#fef2f2', color: '#dc2626' }}><ShieldOff style={{ width: 22, height: 22 }} /></div>
           <div>
             <div className="inv-kpi-label">{isEn ? 'Out of stock' : 'Hết hàng'}</div>
-            <div className="inv-kpi-value" style={{ color: '#dc2626' }}>{kpiOut} SP</div>
+            <div className="inv-kpi-value" style={{ color: '#dc2626' }}>{kpiOut} {isEn ? 'items' : 'SP'}</div>
             <div className="inv-kpi-sub">{isEn ? 'Restock immediately' : 'Cần nhập ngay'}</div>
           </div>
         </div>
@@ -318,7 +384,7 @@ export function InventoryPage() {
           <div className="inv-kpi-icon" style={{ background: '#fffbeb', color: '#d97706' }}><AlertTriangle style={{ width: 22, height: 22 }} /></div>
           <div>
             <div className="inv-kpi-label">{isEn ? 'Low stock' : 'Sắp hết hàng'}</div>
-            <div className="inv-kpi-value" style={{ color: '#d97706' }}>{kpiLow} SP</div>
+            <div className="inv-kpi-value" style={{ color: '#d97706' }}>{kpiLow} {isEn ? 'items' : 'SP'}</div>
             <div className="inv-kpi-sub">{isEn ? 'Below safety threshold' : 'Dưới ngưỡng an toàn'}</div>
           </div>
         </div>
@@ -326,7 +392,7 @@ export function InventoryPage() {
           <div className="inv-kpi-icon" style={{ background: '#eff6ff', color: '#2563eb' }}><TrendingUp style={{ width: 22, height: 22 }} /></div>
           <div>
             <div className="inv-kpi-label">{isEn ? 'Overstock' : 'Tồn nhiều'}</div>
-            <div className="inv-kpi-value" style={{ color: '#2563eb' }}>{kpiOver} SP</div>
+            <div className="inv-kpi-value" style={{ color: '#2563eb' }}>{kpiOver} {isEn ? 'items' : 'SP'}</div>
             <div className="inv-kpi-sub">{isEn ? 'Tied capital, needs clearance' : 'Vốn đọng, cần xả'}</div>
           </div>
         </div>
@@ -335,7 +401,7 @@ export function InventoryPage() {
       {/* TAB BAR */}
       <div className="inv-tab-bar">
         {[
-          { id: 'balances', label: isEn ? `Inventory (${products.length} SP)` : `Tồn kho (${products.length} SP)`, icon: <Package style={{ width: 14, height: 14 }} /> },
+          { id: 'balances', label: isEn ? `Inventory (${products.length} items)` : `Tồn kho (${products.length} SP)`, icon: <Package style={{ width: 14, height: 14 }} /> },
           { id: 'movements', label: isEn ? `Movement History (${movements.length})` : `Lịch sử xuất nhập (${movements.length})`, icon: <BarChart3 style={{ width: 14, height: 14 }} /> },
           { id: 'stocktake', label: isEn ? 'Stocktake Audits' : 'Phiên kiểm kê', icon: <ClipboardList style={{ width: 14, height: 14 }} /> },
         ].map(t => (
@@ -500,7 +566,7 @@ export function InventoryPage() {
                         <td style={{ textAlign: 'center', fontSize: 12, color: '#64748b' }}>
                           {m.beforeQuantity} <ArrowRight style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} /> <strong style={{ color: '#0f172a' }}>{m.afterQuantity}</strong>
                         </td>
-                        <td style={{ fontSize: 12, color: '#64748b', maxWidth: 200 }}>{m.note || '—'}</td>
+                        <td style={{ fontSize: 12, color: '#64748b', maxWidth: 200 }}>{formatMovementNote(m.note, isEn)}</td>
                         <td style={{ fontSize: 12, color: '#64748b' }}>{m.createdBy?.fullName || m.createdBy?.email || '—'}</td>
                       </tr>
                     );

@@ -9,9 +9,46 @@ import {
 import { usePricingStore } from '../../components/store/pricingStore';
 import { useToast } from '../../components/common/Toast';
 import { useTranslation } from '../../i18n/useTranslation';
+import { formatCategoryName } from '../../components/store/productStore';
 
 function formatVND(n) {
   return Number(n || 0).toLocaleString('vi-VN') + ' đ';
+}
+
+function formatPricingReason(text, isEn) {
+  if (!text || !isEn) return text || '';
+  return String(text)
+    .replace(/Biên lợi nhuận gộp hiện tại \(([^)]+)\) thấp hơn mục tiêu tối thiểu \(([^)]+)\)\.\s*Đề xuất tăng giá lên mức an toàn\./i,
+      'Current gross margin ($1) is below minimum target ($2). Suggested price increase to safe margin.')
+    .replace(/Chưa đủ số ngày lịch sử bán hàng để đề xuất thay đổi giá theo nhu cầu/i,
+      'Insufficient sales history days to recommend demand-based price adjustments.')
+    .replace(/Dữ liệu lịch sử chưa đủ tin cậy \(([^)]+)\) để đưa ra đề xuất thay đổi giá an toàn/i,
+      'Historical data confidence ($1) insufficient for safe price adjustment.')
+    .replace(/Đề xuất tối ưu giá từ thuật toán định giá kho hàng\./i,
+      'Algorithmic pricing optimization based on inventory and velocity.');
+}
+
+function formatFactorCategory(cat, isEn) {
+  if (!cat || !isEn) return cat || '';
+  const map = {
+    'Vận tốc bán hàng': 'Sales Velocity',
+    'Tồn kho': 'Inventory Level',
+    'Biên lợi nhuận': 'Profit Margin',
+    'Thị trường & Mùa vụ': 'Market & Seasonality',
+    'Biến động nhu cầu': 'Demand Fluctuation',
+  };
+  return map[cat] || cat;
+}
+
+function formatFactorName(name, isEn) {
+  if (!name || !isEn) return name || '';
+  const map = {
+    'Tốc độ tiêu thụ hàng ngày': 'Daily Sales Velocity',
+    'Mức độ tồn kho hiện tại': 'Current Stock Level',
+    'Mục tiêu biên lợi nhuận tối thiểu': 'Minimum Margin Target',
+    'Tỷ lệ co giãn nhu cầu': 'Demand Elasticity',
+  };
+  return map[name] || name;
 }
 
 export function PricingPage() {
@@ -418,8 +455,8 @@ export function PricingPage() {
                         {h.decision === 'accepted' ? (isEn ? 'Accepted' : 'Đã chấp nhận') : h.decision === 'modified' ? (isEn ? 'Modified' : 'Đã chỉnh sửa') : (isEn ? 'Rejected' : 'Đã từ chối')}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-foreground">{h.decidedBy}</td>
-                    <td className="py-3 px-4 text-muted-foreground max-w-xs truncate">{h.reason}</td>
+                    <td className="py-3 px-4 text-foreground">{h.decidedBy === 'Chủ shop' ? (isEn ? 'Store Owner' : 'Chủ shop') : h.decidedBy}</td>
+                    <td className="py-3 px-4 text-muted-foreground max-w-xs truncate">{formatPricingReason(h.reason, isEn)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -498,7 +535,7 @@ export function PricingPage() {
                             : (isEn ? 'MAINTAIN PRICE' : 'GIỮ NGUYÊN GIÁ')}
                         </span>
                         <span className="text-xs text-muted-foreground">{isEn ? 'SKU: ' : 'Mã: '}{item.sku}</span>
-                        <span className="text-xs text-muted-foreground">• {item.category}</span>
+                        <span className="text-xs text-muted-foreground">• {isEn ? (item.category === 'Chung' ? 'General' : formatCategoryName(item.category, isEn)) : item.category}</span>
                         <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">
                           {isEn ? 'Confidence: ' : 'Tin cậy: '}{item.confidence}%
                         </span>
@@ -508,7 +545,7 @@ export function PricingPage() {
 
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                        <span>{item.reasonSummary}</span>
+                        <span>{formatPricingReason(item.reasonSummary, isEn)}</span>
                       </p>
                     </div>
 
@@ -655,9 +692,9 @@ export function PricingPage() {
                   {detailModalItem.factors.map((f, idx) => (
                     <div key={idx} className="p-3.5 rounded-xl border border-border bg-card flex items-start justify-between gap-3">
                       <div>
-                        <span className="text-xs font-bold text-blue-600 block">{f.category}</span>
-                        <h5 className="text-sm font-semibold text-foreground mt-0.5">{f.name}</h5>
-                        <p className="text-xs text-muted-foreground mt-1">{f.detail}</p>
+                        <span className="text-xs font-bold text-blue-600 block">{formatFactorCategory(f.category, isEn)}</span>
+                        <h5 className="text-sm font-semibold text-foreground mt-0.5">{formatFactorName(f.name, isEn)}</h5>
+                        <p className="text-xs text-muted-foreground mt-1">{formatPricingReason(f.detail || f.label, isEn)}</p>
                       </div>
                       <span className="text-xs font-bold px-2 py-1 rounded bg-muted text-foreground shrink-0">
                         {f.impact}
