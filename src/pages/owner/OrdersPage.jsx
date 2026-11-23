@@ -1959,7 +1959,7 @@ export function OrdersPage() {
 
               <div className="flex justify-between items-center">
 
-                <span className="text-slate-500 font-medium">Đã xuất kho (thực thu):</span>
+                <span className="text-slate-500 font-medium">{isEn ? 'Fulfilled (collected):' : 'Đã xuất kho (thực thu):'}</span>
 
                 <span className="font-bold text-emerald-700">
 
@@ -1973,7 +1973,7 @@ export function OrdersPage() {
 
                 <div className="flex justify-between items-center text-amber-700">
 
-                  <span>Đã trừ hoàn trả ({Number(effectiveMetrics.returnedQuantity || 0)} SP):</span>
+                  <span>{isEn ? `Less refunds (${Number(effectiveMetrics.returnedQuantity || 0)} items):` : `Đã trừ hoàn trả (${Number(effectiveMetrics.returnedQuantity || 0)} SP):`}</span>
 
                   <span className="font-semibold text-amber-600">
 
@@ -1989,7 +1989,7 @@ export function OrdersPage() {
 
                 <div className="flex justify-between items-center text-slate-400">
 
-                  <span>Chờ xử lý / Nháp:</span>
+                  <span>{isEn ? 'Pending / Draft:' : 'Chờ xử lý / Nháp:'}</span>
 
                   <span className="font-semibold text-amber-600">
 
@@ -2063,11 +2063,11 @@ export function OrdersPage() {
 
               <div className="flex justify-between items-center">
 
-                <span className="text-slate-500 font-medium">Hoàn tất / Đã xuất:</span>
+                <span className="text-slate-500 font-medium">{isEn ? 'Fulfilled / Completed:' : 'Hoàn tất / Đã xuất:'}</span>
 
                 <span className="font-bold text-blue-700">
 
-                  {Number(effectiveMetrics.fulfilledCount ?? effectiveMetrics.orderCount ?? 0).toLocaleString('vi-VN')} đơn
+                  {Number(effectiveMetrics.fulfilledCount ?? effectiveMetrics.orderCount ?? 0).toLocaleString('vi-VN')} {isEn ? 'orders' : 'đơn'}
 
                 </span>
 
@@ -2077,11 +2077,11 @@ export function OrdersPage() {
 
                 <div className="flex justify-between items-center text-slate-400">
 
-                  <span>Chờ xử lý / Nháp:</span>
+                  <span>{isEn ? 'Pending / Draft:' : 'Chờ xử lý / Nháp:'}</span>
 
                   <span className="font-semibold text-amber-600">
 
-                    +{Number(effectiveMetrics.pendingCount).toLocaleString('vi-VN')} đơn
+                    +{Number(effectiveMetrics.pendingCount).toLocaleString('vi-VN')} {isEn ? 'orders' : 'đơn'}
 
                   </span>
 
@@ -2151,11 +2151,11 @@ export function OrdersPage() {
 
               <div className="flex justify-between items-center">
 
-                <span className="text-slate-500 font-medium">Đã trừ tồn kho (thực bán):</span>
+                <span className="text-slate-500 font-medium">{isEn ? 'Deducted from stock (sold):' : 'Đã trừ tồn kho (thực bán):'}</span>
 
                 <span className="font-bold text-indigo-700">
 
-                  {Number(effectiveMetrics.fulfilledSoldQuantity ?? effectiveMetrics.totalSoldQuantity ?? 0).toLocaleString('vi-VN')} SP
+                  {Number(effectiveMetrics.fulfilledSoldQuantity ?? effectiveMetrics.totalSoldQuantity ?? 0).toLocaleString('vi-VN')} {isEn ? 'items' : 'SP'}
 
                 </span>
 
@@ -2165,11 +2165,11 @@ export function OrdersPage() {
 
                 <div className="flex justify-between items-center text-amber-700">
 
-                  <span>Đã nhận lại kho:</span>
+                  <span>{isEn ? 'Returned to stock:' : 'Đã nhận lại kho:'}</span>
 
                   <span className="font-semibold text-amber-600">
 
-                    +{Number(effectiveMetrics.returnedQuantity).toLocaleString('vi-VN')} SP
+                    +{Number(effectiveMetrics.returnedQuantity).toLocaleString('vi-VN')} {isEn ? 'items' : 'SP'}
 
                   </span>
 
@@ -2181,11 +2181,11 @@ export function OrdersPage() {
 
                 <div className="flex justify-between items-center text-slate-400">
 
-                  <span>Chờ xuất / Nháp:</span>
+                  <span>{isEn ? 'Pending / Draft:' : 'Chờ xuất / Nháp:'}</span>
 
                   <span className="font-semibold text-amber-600">
 
-                    +{Number(effectiveMetrics.pendingSoldQuantity).toLocaleString('vi-VN')} SP
+                    +{Number(effectiveMetrics.pendingSoldQuantity).toLocaleString('vi-VN')} {isEn ? 'items' : 'SP'}
 
                   </span>
 

@@ -5,6 +5,7 @@ import {
   Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2, Package, Receipt, LifeBuoy, ArrowLeft, Download, ShieldCheck,
 } from 'lucide-react';
 import { useToast } from '../../components/common/Toast';
+import { useTranslation } from '../../i18n/useTranslation';
 import {
   IMPORT_KINDS, FIELD_LABELS, PRODUCT_IMPORT_MODES, detectSheet, pickSheet, toProductItems, toProductPayload, toSalesRows,
   parseCsv, buildTemplateCsv, findCostSheet, buildCostLookup, applyCostLookup,
@@ -242,6 +243,8 @@ function StockChangeSummary({ changes }) {
 export function ImportDataPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { language } = useTranslation();
+  const isEn = language === 'en';
   const [searchParams] = useSearchParams();
 
   const [kind, setKind] = useState(searchParams.get('type') === IMPORT_KINDS.SALES ? IMPORT_KINDS.SALES : IMPORT_KINDS.PRODUCTS);
@@ -413,21 +416,42 @@ export function ImportDataPage() {
     <div className={ui.pageContainer}>
       <div className={ui.pageHeader}>
         <div>
-          <h1 className={ui.pageTitle}>Nhập dữ liệu</h1>
-          <p className={ui.pageDesc}>Chuyển sản phẩm và lịch sử bán hàng từ phần mềm cũ hoặc file Excel sang StockPilot.</p>
+          <h1 className={ui.pageTitle}>{isEn ? 'Data Import' : 'Nhập dữ liệu'}</h1>
+          <p className={ui.pageDesc}>
+            {isEn
+              ? 'Transfer products and sales history from legacy software or Excel files to StockPilot.'
+              : 'Chuyển sản phẩm và lịch sử bán hàng từ phần mềm cũ hoặc file Excel sang StockPilot.'}
+          </p>
         </div>
         <button type="button" onClick={() => navigate('/support?new=DATA_IMPORT')} className={ui.btnSecondary}>
           <LifeBuoy className="w-3.5 h-3.5" />
-          Nhờ đội hỗ trợ
+          {isEn ? 'Get Support' : 'Nhờ đội hỗ trợ'}
         </button>
       </div>
 
       <div className="grid xl:grid-cols-[minmax(0,1fr)_340px] gap-5 items-start">
         {/* Các bước */}
         <div className="space-y-4 min-w-0">
-          <Step n={1} title="Chọn loại dữ liệu" active done={Boolean(parsed)}>
+          <Step n={1} title={isEn ? 'Select data type' : 'Chọn loại dữ liệu'} active done={Boolean(parsed)}>
             <div className="grid sm:grid-cols-2 gap-3">
-              {KINDS.map((k) => (
+              {[
+                {
+                  id: IMPORT_KINDS.PRODUCTS,
+                  icon: Package,
+                  title: isEn ? 'Products & stock' : 'Sản phẩm & tồn kho',
+                  desc: isEn
+                    ? 'SKU, name, category, retail price, cost price, current stock.'
+                    : 'Mã hàng, tên, nhóm hàng, giá bán, giá vốn, tồn kho hiện tại.',
+                },
+                {
+                  id: IMPORT_KINDS.SALES,
+                  icon: Receipt,
+                  title: isEn ? 'Sales history' : 'Lịch sử bán hàng',
+                  desc: isEn
+                    ? 'Past invoices help make inventory forecasts and alerts more accurate.'
+                    : 'Hóa đơn cũ giúp dự báo và cảnh báo tồn kho chính xác hơn.',
+                },
+              ].map((k) => (
                 <button
                   key={k.id}
                   type="button"
@@ -447,11 +471,15 @@ export function ImportDataPage() {
               ))}
             </div>
             {kind === IMPORT_KINDS.SALES && (
-              <p className="mt-3 text-[13px] text-[#64748B]">Nhập sản phẩm trước: lịch sử bán hàng chỉ ghép được với mã hàng đã có trong StockPilot.</p>
+              <p className="mt-3 text-[13px] text-[#64748B]">
+                {isEn
+                  ? 'Import products first: sales history can only be matched with SKUs already existing in StockPilot.'
+                  : 'Nhập sản phẩm trước: lịch sử bán hàng chỉ ghép được với mã hàng đã có trong StockPilot.'}
+              </p>
             )}
           </Step>
 
-          <Step n={2} title="Tải file lên" active done={step2Done}>
+          <Step n={2} title={isEn ? 'Upload file' : 'Tải file lên'} active done={step2Done}>
             <label
               className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed border-[#CBD5E1] hover:border-[#3B82F6] hover:bg-blue-50/30 cursor-pointer text-center transition-colors"
               onDragOver={(e) => e.preventDefault()}
@@ -466,13 +494,15 @@ export function ImportDataPage() {
                   <span className="inline-flex items-center gap-1.5">
                     <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                     {fileName}
-                    <span className="text-[#3B82F6] ml-1">· Chọn file khác</span>
+                    <span className="text-[#3B82F6] ml-1">{isEn ? '· Choose another file' : '· Chọn file khác'}</span>
                   </span>
                 ) : (
-                  'Kéo thả file vào đây hoặc bấm để chọn'
+                  isEn ? 'Drag and drop file here or click to browse' : 'Kéo thả file vào đây hoặc bấm để chọn'
                 )}
               </span>
-              <span className="text-[12px] text-[#94A3B8]">Excel (.xlsx) hoặc CSV · tối đa {MAX_FILE_MB} MB</span>
+              <span className="text-[12px] text-[#94A3B8]">
+                {isEn ? `Excel (.xlsx) or CSV · max ${MAX_FILE_MB} MB` : `Excel (.xlsx) hoặc CSV · tối đa ${MAX_FILE_MB} MB`}
+              </span>
               <input type="file" accept=".xlsx,.csv" className="sr-only" onChange={(e) => handleFile(e.target.files?.[0])} onClick={(e) => (e.target.value = '')} />
             </label>
 
@@ -569,10 +599,26 @@ export function ImportDataPage() {
             )}
           </Step>
 
-          <Step n={3} title="Kiểm tra và nhập" active={step2Done} done={Boolean(result)}>
+          <Step n={3} title={isEn ? 'Review & import' : 'Kiểm tra và nhập'} active={step2Done} done={Boolean(result)}>
             {kind === IMPORT_KINDS.PRODUCTS && (
               <div className="grid sm:grid-cols-3 gap-2 mb-4 text-[13px]">
-                {PRODUCT_MODES.map(([value, label, hint]) => (
+                {[
+                  [
+                    PRODUCT_IMPORT_MODES.CREATE_ONLY,
+                    isEn ? 'Add new items only' : 'Chỉ thêm mã hàng mới',
+                    isEn ? 'Existing SKUs in StockPilot are reported as errors, not overwritten.' : 'Mã đã có trong StockPilot được báo lỗi, không bị ghi đè.',
+                  ],
+                  [
+                    PRODUCT_IMPORT_MODES.UPSERT_METADATA,
+                    isEn ? 'Update name, price, category' : 'Cập nhật tên, giá, nhóm hàng',
+                    isEn ? 'Keeps existing inventory stock unchanged.' : 'Không thay đổi tồn kho hiện có.',
+                  ],
+                  [
+                    PRODUCT_IMPORT_MODES.REPLACE_STOCK,
+                    isEn ? 'Update stock by inventory count' : 'Cập nhật tồn theo kiểm kê',
+                    isEn ? 'Existing SKU stock = count in file, records adjustment slip. Keeps name & price.' : 'Tồn kho của mã đã có = số đếm trong file, ghi phiếu điều chỉnh vào sổ kho. Không đổi tên, giá.',
+                  ],
+                ].map(([value, label, hint]) => (
                   <label key={value} className={`flex gap-2 p-3 rounded-lg border cursor-pointer ${productMode === value ? 'border-[#3B82F6]' : 'border-[#E5E7EB]'}`}>
                     <input
                       type="radio"
@@ -596,12 +642,14 @@ export function ImportDataPage() {
 
             {kind === IMPORT_KINDS.PRODUCTS && uncountedRows.length > 0 && !preview && (
               <p className="mb-3 text-[13px] text-[#475569]">
-                <b>{uncountedRows.length}</b> dòng chưa có số đếm (ô tồn kho trống) sẽ được bỏ qua, tồn kho của các mã đó giữ nguyên.
+                {isEn
+                  ? <b>{uncountedRows.length} uncounted rows (empty stock) will be skipped, existing stock remains unchanged.</b>
+                  : <><b>{uncountedRows.length}</b> dòng chưa có số đếm (ô tồn kho trống) sẽ được bỏ qua, tồn kho của các mã đó giữ nguyên.</>}
               </p>
             )}
             {excludedRows.size > 0 && !result && (
               <p className="mb-3 text-[13px] text-[#475569]">
-                Đã loại <b>{excludedRows.size}</b> dòng lỗi khỏi lần nhập này.{' '}
+                {isEn ? <>Excluded <b>{excludedRows.size}</b> error rows from this import.{' '}</> : <>Đã loại <b>{excludedRows.size}</b> dòng lỗi khỏi lần nhập này.{' '}</>}
                 <button
                   type="button"
                   className="text-[#3B82F6] hover:underline cursor-pointer"
@@ -610,7 +658,7 @@ export function ImportDataPage() {
                     setPreview(null);
                   }}
                 >
-                  Đưa lại vào
+                  {isEn ? 'Include again' : 'Đưa lại vào'}
                 </button>
               </p>
             )}
@@ -618,7 +666,7 @@ export function ImportDataPage() {
             {!preview && (
               <button type="button" onClick={() => handleCheck()} disabled={!step2Done || busy === 'check'} className={ui.btnPrimary}>
                 {busy === 'check' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Kiểm tra với dữ liệu cửa hàng
+                {isEn ? 'Validate with store data' : 'Kiểm tra với dữ liệu cửa hàng'}
               </button>
             )}
 
@@ -626,13 +674,13 @@ export function ImportDataPage() {
               <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-2 text-center">
                   {[
-                    ['Sẽ nhập', preview.valid, 'text-emerald-700'],
-                    ['Cảnh báo', preview.warnings, preview.warnings ? 'text-[#D97706]' : 'text-[#334155]'],
-                    ['Lỗi, sẽ bỏ qua', preview.invalid, preview.invalid ? 'text-[#DC2626]' : 'text-[#334155]'],
+                    [isEn ? 'Will import' : 'Sẽ nhập', preview.valid, 'text-emerald-700'],
+                    [isEn ? 'Warnings' : 'Cảnh báo', preview.warnings, preview.warnings ? 'text-[#D97706]' : 'text-[#334155]'],
+                    [isEn ? 'Errors (will skip)' : 'Lỗi, sẽ bỏ qua', preview.invalid, preview.invalid ? 'text-[#DC2626]' : 'text-[#334155]'],
                   ].map(([label, value, color]) => (
                     <div key={label} className="p-3 rounded-lg border border-[#E5E7EB]">
                       <p className="text-[12px] text-[#64748B]">{label}</p>
-                      <p className={`text-[20px] font-semibold tabular-nums ${color}`}>{value.toLocaleString('vi-VN')}</p>
+                      <p className={`text-[20px] font-semibold tabular-nums ${color}`}>{value.toLocaleString(isEn ? 'en-US' : 'vi-VN')}</p>
                     </div>
                   ))}
                 </div>
@@ -643,7 +691,7 @@ export function ImportDataPage() {
                       <li key={i} className="px-3 py-2 flex gap-2">
                         <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${issue.severity === 'ERROR' ? 'text-[#DC2626]' : 'text-[#D97706]'}`} />
                         <span>
-                          Dòng {issue.row}
+                          {isEn ? `Row ${issue.row}` : `Dòng ${issue.row}`}
                           {issue.sku ? ` · ${issue.sku}` : ''}: {issue.message}
                         </span>
                       </li>
@@ -653,16 +701,16 @@ export function ImportDataPage() {
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={handleCommit} disabled={busy === 'commit' || preview.valid === 0} className={ui.btnPrimary}>
                     {busy === 'commit' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                    Nhập {preview.valid.toLocaleString('vi-VN')} dòng hợp lệ
+                    {isEn ? `Import ${preview.valid.toLocaleString('en-US')} valid rows` : `Nhập ${preview.valid.toLocaleString('vi-VN')} dòng hợp lệ`}
                   </button>
                   {kind === IMPORT_KINDS.PRODUCTS && preview.invalid > 0 && (
                     <button type="button" onClick={excludeErrorRowsAndRecheck} disabled={busy === 'check'} className={ui.btnSecondary}>
-                      Bỏ {preview.invalid.toLocaleString('vi-VN')} dòng lỗi và kiểm tra lại
+                      {isEn ? `Exclude ${preview.invalid.toLocaleString('en-US')} error rows & recheck` : `Bỏ ${preview.invalid.toLocaleString('vi-VN')} dòng lỗi và kiểm tra lại`}
                     </button>
                   )}
                   <button type="button" onClick={() => setPreview(null)} disabled={busy === 'commit'} className={ui.btnSecondary}>
                     <ArrowLeft className="w-3.5 h-3.5" />
-                    Kiểm tra lại
+                    {isEn ? 'Recheck' : 'Kiểm tra lại'}
                   </button>
                 </div>
               </div>
@@ -676,11 +724,11 @@ export function ImportDataPage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={() => navigate(kind === IMPORT_KINDS.PRODUCTS ? '/products' : '/analytics')} className={ui.btnPrimary}>
-                    {kind === IMPORT_KINDS.PRODUCTS ? 'Xem sản phẩm' : 'Xem phân tích'}
+                    {kind === IMPORT_KINDS.PRODUCTS ? (isEn ? 'View Products' : 'Xem sản phẩm') : (isEn ? 'View Analytics' : 'Xem phân tích')}
                   </button>
                   {kind === IMPORT_KINDS.PRODUCTS && (
                     <button type="button" onClick={() => selectKind(IMPORT_KINDS.SALES)} className={ui.btnSecondary}>
-                      Tiếp tục nhập lịch sử bán hàng
+                      {isEn ? 'Continue to Sales History' : 'Tiếp tục nhập lịch sử bán hàng'}
                     </button>
                   )}
                 </div>
@@ -692,7 +740,7 @@ export function ImportDataPage() {
         {/* Hướng dẫn theo phần mềm nguồn */}
         <aside className="space-y-4 xl:sticky xl:top-20">
           <section className={`${ui.card} p-5`}>
-            <h2 className="text-[14px] font-semibold text-[#334155]">Xuất file từ phần mềm đang dùng</h2>
+            <h2 className="text-[14px] font-semibold text-[#334155]">{isEn ? 'Export from your software' : 'Xuất file từ phần mềm đang dùng'}</h2>
             <div className="flex flex-wrap gap-1.5 mt-3" role="tablist">
               {SOURCES.map((s) => (
                 <button
@@ -713,30 +761,36 @@ export function ImportDataPage() {
               {source[kind].map((line) => (
                 <li key={line}>{line}</li>
               ))}
-              <li>Tải file vừa xuất lên ở bước 2.</li>
+              <li>{isEn ? 'Upload the exported file in Step 2.' : 'Tải file vừa xuất lên ở bước 2.'}</li>
             </ol>
             {source.note && <p className="mt-3 text-[12px] text-[#475569] bg-slate-50 border border-[#E5E7EB] rounded-lg p-2.5">{source.note}</p>}
             <p className="mt-3 text-[12px] text-[#94A3B8]">
-              Tên menu có thể khác tùy phiên bản. Hệ thống tự nhận diện cột theo tên nên không cần sửa file.
+              {isEn ? 'Menu names may vary by software version. Columns are auto-mapped by name.' : 'Tên menu có thể khác tùy phiên bản. Hệ thống tự nhận diện cột theo tên nên không cần sửa file.'}
             </p>
           </section>
 
           <section className={`${ui.card} p-5`}>
-            <h2 className="text-[14px] font-semibold text-[#334155]">Tự soạn file</h2>
-            <p className="mt-1 text-[13px] text-[#64748B]">{REQUIRED_HINT[kind]}</p>
+            <h2 className="text-[14px] font-semibold text-[#334155]">{isEn ? 'Create your own file' : 'Tự soạn file'}</h2>
+            <p className="mt-1 text-[13px] text-[#64748B]">
+              {isEn
+                ? (kind === IMPORT_KINDS.PRODUCTS
+                    ? 'Required: SKU, Product Name. Recommended: Category, Selling Price, Cost Price, Stock.'
+                    : 'Required: SKU, Quantity, Selling Price, Sale Date. SKU must already exist in StockPilot.')
+                : REQUIRED_HINT[kind]}
+            </p>
             <button type="button" onClick={() => downloadTemplate(kind)} className={`${ui.btnSecondary} mt-3 w-full`}>
               <Download className="w-3.5 h-3.5" />
-              Tải file mẫu {kind === IMPORT_KINDS.PRODUCTS ? 'sản phẩm' : 'lịch sử bán hàng'}
+              {isEn ? `Download ${kind === IMPORT_KINDS.PRODUCTS ? 'product' : 'sales history'} template (.csv)` : `Tải file mẫu ${kind === IMPORT_KINDS.PRODUCTS ? 'sản phẩm' : 'lịch sử bán hàng'}`}
             </button>
           </section>
 
           <section className="rounded-lg border border-[#E5E7EB] bg-slate-50 p-4 text-[12px] text-[#64748B] space-y-1.5">
             <p className="flex items-center gap-1.5 text-[#334155] font-medium">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              An toàn khi nhập
+              {isEn ? 'Data Safety Guarantee' : 'An toàn khi nhập'}
             </p>
-            <p>File được đọc ngay trên máy bạn. Dữ liệu chỉ gửi lên khi bạn bấm Kiểm tra, và chỉ được ghi khi bạn bấm Nhập.</p>
-            <p>Bấm Nhập nhiều lần cũng không bị nhập trùng.</p>
+            <p>{isEn ? 'Files are parsed locally in your browser. Data is only sent when you click Validate, and saved when you click Import.' : 'File được đọc ngay trên máy bạn. Dữ liệu chỉ gửi lên khi bạn bấm Kiểm tra, và chỉ được ghi khi bạn bấm Nhập.'}</p>
+            <p>{isEn ? 'Clicking Import multiple times will never create duplicates.' : 'Bấm Nhập nhiều lần cũng không bị nhập trùng.'}</p>
           </section>
         </aside>
       </div>

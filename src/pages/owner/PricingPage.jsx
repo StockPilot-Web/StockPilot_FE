@@ -9,9 +9,23 @@ import {
 import { usePricingStore } from '../../components/store/pricingStore';
 import { useToast } from '../../components/common/Toast';
 import { useTranslation } from '../../i18n/useTranslation';
+import { formatCategoryName } from '../../components/store/productStore';
 
 function formatVND(n) {
   return Number(n || 0).toLocaleString('vi-VN') + ' đ';
+}
+
+function formatPricingReason(text, isEn) {
+  if (!text || !isEn) return text || '';
+  return String(text)
+    .replace(/Biên lợi nhuận gộp hiện tại \(([^)]+)\) thấp hơn mục tiêu tối thiểu \(([^)]+)\)\.\s*Đề xuất tăng giá lên mức an toàn\./i,
+      'Current gross margin ($1) is below minimum target ($2). Suggested price increase to safe margin.')
+    .replace(/Chưa đủ số ngày lịch sử bán hàng để đề xuất thay đổi giá theo nhu cầu/i,
+      'Insufficient sales history days to recommend demand-based price adjustments.')
+    .replace(/Dữ liệu lịch sử chưa đủ tin cậy \(([^)]+)\) để đưa ra đề xuất thay đổi giá an toàn/i,
+      'Historical data confidence ($1) insufficient for safe price adjustment.')
+    .replace(/Đề xuất tối ưu giá từ thuật toán định giá kho hàng\./i,
+      'Algorithmic pricing optimization based on inventory and velocity.');
 }
 
 export function PricingPage() {
@@ -498,7 +512,7 @@ export function PricingPage() {
                             : (isEn ? 'MAINTAIN PRICE' : 'GIỮ NGUYÊN GIÁ')}
                         </span>
                         <span className="text-xs text-muted-foreground">{isEn ? 'SKU: ' : 'Mã: '}{item.sku}</span>
-                        <span className="text-xs text-muted-foreground">• {item.category}</span>
+                        <span className="text-xs text-muted-foreground">• {isEn ? (item.category === 'Chung' ? 'General' : formatCategoryName(item.category, isEn)) : item.category}</span>
                         <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">
                           {isEn ? 'Confidence: ' : 'Tin cậy: '}{item.confidence}%
                         </span>
@@ -508,7 +522,7 @@ export function PricingPage() {
 
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                        <span>{item.reasonSummary}</span>
+                        <span>{formatPricingReason(item.reasonSummary, isEn)}</span>
                       </p>
                     </div>
 

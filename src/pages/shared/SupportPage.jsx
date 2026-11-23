@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Send, Loader2, LifeBuoy, ArrowLeft, CheckCircle2, ImagePlus } from 'lucide-react';
 import { useToast } from '../../components/common/Toast';
+import { useTranslation } from '../../i18n/useTranslation';
 import { MessageThread, Composer, PendingImages, useImagePicker, usePolling } from '../../components/support/SupportChat';
 import {
   apiListMyTickets,
@@ -34,33 +35,64 @@ const STORE_STATUS_HINT = {
   RESOLVED: 'Yêu cầu đã được giải quyết. Gửi thêm tin nhắn sẽ mở lại yêu cầu.',
 };
 
-export function StatusBadge({ status }) {
-  return <span className={`${ui.badge} ${STATUS_STYLE[status] || ui.badgeGray} whitespace-nowrap`}>{SUPPORT_STATUS_LABELS[status] || status}</span>;
+const getStoreStatusHint = (status, isEn) => {
+  if (isEn) {
+    switch (status) {
+      case 'OPEN': return 'Support team has received your ticket and will respond shortly.';
+      case 'IN_PROGRESS': return 'Support team is actively processing your request.';
+      case 'WAITING_STORE': return 'Support team is awaiting your reply.';
+      case 'RESOLVED': return 'Ticket resolved. Sending a new message will reopen it.';
+      default: return '';
+    }
+  }
+  return STORE_STATUS_HINT[status];
+};
+
+const getCategoryLabel = (cat, isEn) => {
+  if (!isEn) return SUPPORT_CATEGORY_LABELS[cat] || cat;
+  const enCat = {
+    DATA_IMPORT: 'Data Import / Migration',
+    INVENTORY_SYNC: 'Stock & Inventory',
+    PAYMENT_PAYOS: 'PayOS / VietQR Payments',
+    PAYMENT_MOMO: 'MoMo Wallet Payments',
+    FEATURE_REQUEST: 'Feature Suggestion',
+    BUG_REPORT: 'Bug Report / Error',
+    ACCOUNT_BILLING: 'Account & Subscription',
+    OTHER: 'General Support',
+  };
+  return enCat[cat] || SUPPORT_CATEGORY_LABELS[cat] || cat;
+};
+
+export function StatusBadge({ status, isEn }) {
+  const enLabels = {
+    OPEN: 'Open',
+    IN_PROGRESS: 'In Progress',
+    WAITING_STORE: 'Awaiting Reply',
+    RESOLVED: 'Resolved',
+  };
+  return <span className={`${ui.badge} ${STATUS_STYLE[status] || ui.badgeGray} whitespace-nowrap`}>{(isEn ? enLabels[status] : SUPPORT_STATUS_LABELS[status]) || status}</span>;
 }
 
-const FILTERS = [
-  { value: '', label: 'Tất cả' },
-  { value: 'WAITING_STORE', label: 'Cần bạn trả lời' },
-  { value: 'OPEN', label: 'Đang chờ' },
-  { value: 'RESOLVED', label: 'Đã xong' },
-];
-
-function NewTicketForm({ initialCategory, onCreated, onCancel }) {
+function NewTicketForm({ initialCategory, onCreated, onCancel, isEn }) {
   const { toast } = useToast();
   const [form, setForm] = useState({ subject: '', category: initialCategory || '', message: '' });
   const [sending, setSending] = useState(false);
   const fileInput = useRef(null);
-  const images = useImagePicker((msg) => toast({ type: 'warning', title: 'Không thêm được ảnh', description: msg }));
+  const images = useImagePicker((msg) => toast({ type: 'warning', title: isEn ? 'Cannot add image' : 'Không thêm được ảnh', description: msg }));
 
   const submit = async (e) => {
     e.preventDefault();
     setSending(true);
     try {
       const created = await apiCreateTicket(form, images.files);
-      toast({ type: 'success', title: 'Đã gửi yêu cầu hỗ trợ', description: 'Bạn sẽ nhận thông báo khi đội hỗ trợ trả lời.' });
+      toast({
+        type: 'success',
+        title: isEn ? 'Support ticket submitted' : 'Đã gửi yêu cầu hỗ trợ',
+        description: isEn ? 'You will be notified as soon as our team replies.' : 'Bạn sẽ nhận thông báo khi đội hỗ trợ trả lời.',
+      });
       onCreated(created.id);
     } catch (err) {
-      toast({ type: 'error', title: 'Không gửi được yêu cầu', description: apiErrorMessage(err) });
+      toast({ type: 'error', title: isEn ? 'Failed to submit ticket' : 'Không gửi được yêu cầu', description: apiErrorMessage(err) });
     } finally {
       setSending(false);
     }
@@ -69,11 +101,15 @@ function NewTicketForm({ initialCategory, onCreated, onCancel }) {
   return (
     <form onSubmit={submit} className="p-5 space-y-4 overflow-y-auto">
       <div>
-        <h2 className="text-[16px] font-semibold text-[#334155]">Yêu cầu hỗ trợ mới</h2>
-        <p className="text-[13px] text-[#64748B] mt-0.5">Mô tả càng rõ, đội hỗ trợ xử lý càng nhanh. Không gửi mật khẩu, mã OTP hay khóa API.</p>
+        <h2 className="text-[16px] font-semibold text-[#334155]">{isEn ? 'New Support Ticket' : 'Yêu cầu hỗ trợ mới'}</h2>
+        <p className="text-[13px] text-[#64748B] mt-0.5">
+          {isEn
+            ? 'The more specific your description, the faster we can assist. Never include passwords or private keys.'
+            : 'Mô tả càng rõ, đội hỗ trợ xử lý càng nhanh. Không gửi mật khẩu, mã OTP hay khóa API.'}
+        </p>
       </div>
       <div>
-        <span className="block text-[13px] font-medium text-[#334155] mb-1.5">Bạn cần hỗ trợ về</span>
+        <span className="block text-[13px] font-medium text-[#334155] mb-1.5">{isEn ? 'Support Topic' : 'Bạn cần hỗ trợ về'}</span>
         <div className="grid sm:grid-cols-3 gap-2">
           {Object.entries(SUPPORT_CATEGORY_LABELS).map(([value, label]) => (
             <button
@@ -84,25 +120,25 @@ function NewTicketForm({ initialCategory, onCreated, onCancel }) {
                 form.category === value ? 'border-[#3B82F6] ring-1 ring-[#3B82F6] bg-blue-50/50 text-[#1D4ED8]' : 'border-[#E5E7EB] text-[#475569] hover:border-[#93C5FD]'
               }`}
             >
-              {label}
+              {getCategoryLabel(value, isEn)}
             </button>
           ))}
         </div>
       </div>
       <label className="block">
-        <span className="block text-[13px] font-medium text-[#334155] mb-1">Tiêu đề</span>
+        <span className="block text-[13px] font-medium text-[#334155] mb-1">{isEn ? 'Subject' : 'Tiêu đề'}</span>
         <input
           required
           minLength={5}
           maxLength={200}
           value={form.subject}
           onChange={(e) => setForm({ ...form, subject: e.target.value })}
-          placeholder="Ví dụ: Không in được hóa đơn sau khi thanh toán VietQR"
+          placeholder={isEn ? 'e.g. Unable to print invoice after VietQR checkout' : 'Ví dụ: Không in được hóa đơn sau khi thanh toán VietQR'}
           className={ui.input}
         />
       </label>
       <label className="block">
-        <span className="block text-[13px] font-medium text-[#334155] mb-1">Mô tả chi tiết</span>
+        <span className="block text-[13px] font-medium text-[#334155] mb-1">{isEn ? 'Detailed description' : 'Mô tả chi tiết'}</span>
         <textarea
           required
           rows={6}
@@ -110,14 +146,14 @@ function NewTicketForm({ initialCategory, onCreated, onCancel }) {
           value={form.message}
           onChange={(e) => setForm({ ...form, message: e.target.value })}
           onPaste={images.onPaste}
-          placeholder={'Bạn đang làm gì, ở trang nào, thấy thông báo lỗi gì?\nCó thể dán ảnh chụp màn hình bằng Ctrl+V.'}
+          placeholder={isEn ? 'What were you doing, which page, and what error message did you see?\nYou can paste screenshots with Ctrl+V.' : 'Bạn đang làm gì, ở trang nào, thấy thông báo lỗi gì?\nCó thể dán ảnh chụp màn hình bằng Ctrl+V.'}
           className={ui.input}
         />
       </label>
       <div className="space-y-2">
         <PendingImages files={images.files} onRemove={images.remove} />
         <button type="button" onClick={() => fileInput.current?.click()} className={ui.btnSecondary} disabled={images.files.length >= 3}>
-          <ImagePlus className="w-3.5 h-3.5" /> Đính kèm ảnh chụp màn hình
+          <ImagePlus className="w-3.5 h-3.5" /> {isEn ? 'Attach screenshots' : 'Đính kèm ảnh chụp màn hình'}
         </button>
         <input
           ref={fileInput}
@@ -130,20 +166,22 @@ function NewTicketForm({ initialCategory, onCreated, onCancel }) {
             e.target.value = '';
           }}
         />
-        <p className="text-[12px] text-[#94A3B8]">Tối đa 3 ảnh, mỗi ảnh ≤ 5 MB. Ảnh chỉ bạn và đội hỗ trợ xem được.</p>
+        <p className="text-[12px] text-[#94A3B8]">{isEn ? 'Max 3 images, ≤ 5 MB each. Visible only to you and support.' : 'Tối đa 3 ảnh, mỗi ảnh ≤ 5 MB. Ảnh chỉ bạn và đội hỗ trợ xem được.'}</p>
       </div>
       {form.category === 'DATA_IMPORT' && (
         <p className="text-[12px] text-[#64748B] bg-slate-50 border border-[#E5E7EB] rounded-lg p-2.5">
-          Mẹo: bạn có thể tự nhập ở trang <a href="/import" className="text-[#2563EB] hover:underline">Nhập dữ liệu</a>. Nếu bị lỗi, mô tả lỗi và tên phần mềm cũ ở đây.
+          {isEn
+            ? <>Tip: you can import files yourself at <a href="/import" className="text-[#2563EB] hover:underline">Import Data</a>. If you encounter issues, describe the error and your previous software name here.</>
+            : <>Mẹo: bạn có thể tự nhập ở trang <a href="/import" className="text-[#2563EB] hover:underline">Nhập dữ liệu</a>. Nếu bị lỗi, mô tả lỗi và tên phần mềm cũ ở đây.</>}
         </p>
       )}
       <div className="flex justify-end gap-2 pt-1">
         <button type="button" onClick={onCancel} className={ui.btnSecondary}>
-          Hủy
+          {isEn ? 'Cancel' : 'Hủy'}
         </button>
         <button type="submit" disabled={sending || !form.category} className={ui.btnPrimary}>
           {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-          Gửi yêu cầu
+          {isEn ? 'Submit Ticket' : 'Gửi yêu cầu'}
         </button>
       </div>
     </form>
@@ -152,6 +190,8 @@ function NewTicketForm({ initialCategory, onCreated, onCancel }) {
 
 export function SupportPage() {
   const { toast } = useToast();
+  const { language } = useTranslation();
+  const isEn = language === 'en';
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [tickets, setTickets] = useState([]);
@@ -162,6 +202,13 @@ export function SupportPage() {
   const selectedId = Number(searchParams.get('ticket')) || null;
   const presetCategory = searchParams.get('new');
   const creating = searchParams.has('new');
+
+  const filters = [
+    { value: '', label: isEn ? 'All' : 'Tất cả' },
+    { value: 'WAITING_STORE', label: isEn ? 'Requires Response' : 'Cần bạn trả lời' },
+    { value: 'OPEN', label: isEn ? 'Pending' : 'Đang chờ' },
+    { value: 'RESOLVED', label: isEn ? 'Resolved' : 'Đã xong' },
+  ];
 
   const loadList = useCallback(async () => {
     try {
@@ -215,12 +262,16 @@ export function SupportPage() {
     <div className={ui.pageContainer}>
       <div className={ui.pageHeader}>
         <div>
-          <h1 className={ui.pageTitle}>Hỗ trợ</h1>
-          <p className={ui.pageDesc}>Trao đổi với đội ngũ StockPilot. Tin nhắn mới tự hiện, bạn cũng nhận thông báo khi có phản hồi.</p>
+          <h1 className={ui.pageTitle}>{isEn ? 'Support' : 'Hỗ trợ'}</h1>
+          <p className={ui.pageDesc}>
+            {isEn
+              ? 'Connect directly with the StockPilot support team. Messages update in real-time, and you will receive notifications when answered.'
+              : 'Trao đổi với đội ngũ StockPilot. Tin nhắn mới tự hiện, bạn cũng nhận thông báo khi có phản hồi.'}
+          </p>
         </div>
         <button type="button" onClick={() => setSearchParams({ new: '' })} className={ui.btnPrimary}>
           <Plus className="w-3.5 h-3.5" />
-          Gửi yêu cầu mới
+          {isEn ? '+ New Support Ticket' : 'Gửi yêu cầu mới'}
         </button>
       </div>
 
@@ -228,7 +279,7 @@ export function SupportPage() {
         {/* Danh sách */}
         <aside className={`${ui.card} flex flex-col overflow-hidden ${showDetail ? 'hidden lg:flex' : 'flex'}`}>
           <div className="p-2 border-b border-[#E5E7EB] flex gap-1 overflow-x-auto">
-            {FILTERS.map((f) => (
+            {filters.map((f) => (
               <button
                 key={f.value}
                 type="button"
@@ -249,8 +300,16 @@ export function SupportPage() {
             ) : tickets.length === 0 ? (
               <div className="p-8 text-center">
                 <LifeBuoy className="w-8 h-8 mx-auto text-[#CBD5E1]" />
-                <p className="mt-2 text-[#334155] font-medium">{filter ? 'Không có yêu cầu nào ở mục này' : 'Chưa có yêu cầu nào'}</p>
-                {!filter && <p className="text-[13px] text-[#64748B]">Gặp khó khăn khi dùng StockPilot? Gửi yêu cầu, chúng tôi sẽ giúp.</p>}
+                <p className="mt-2 text-[#334155] font-medium">
+                  {filter
+                    ? (isEn ? 'No tickets found in this section' : 'Không có yêu cầu nào ở mục này')
+                    : (isEn ? 'No support tickets yet' : 'Chưa có yêu cầu nào')}
+                </p>
+                {!filter && (
+                  <p className="text-[13px] text-[#64748B]">
+                    {isEn ? 'Need help with StockPilot? Submit a ticket and our team will assist you.' : 'Gặp khó khăn khi dùng StockPilot? Gửi yêu cầu, chúng tôi sẽ giúp.'}
+                  </p>
+                )}
               </div>
             ) : (
               <ul className="divide-y divide-[#E5E7EB]">
@@ -262,11 +321,11 @@ export function SupportPage() {
                       className={`w-full text-left px-4 py-3 hover:bg-slate-50 cursor-pointer border-l-2 ${selectedId === t.id ? 'bg-blue-50/60 border-[#3B82F6]' : 'border-transparent'}`}
                     >
                       <div className="flex items-start gap-2">
-                        {t.unread && <span className="mt-1.5 w-2 h-2 rounded-full bg-[#3B82F6] shrink-0" aria-label="Có phản hồi mới" />}
+                        {t.unread && <span className="mt-1.5 w-2 h-2 rounded-full bg-[#3B82F6] shrink-0" aria-label={isEn ? 'New reply' : 'Có phản hồi mới'} />}
                         <p className={`flex-1 text-[13px] line-clamp-2 ${t.unread ? 'font-semibold text-[#0F172A]' : 'font-medium text-[#334155]'}`}>{t.subject}</p>
                       </div>
                       <div className="mt-1.5 flex items-center justify-between gap-2">
-                        <StatusBadge status={t.status} />
+                        <StatusBadge status={t.status} isEn={isEn} />
                         <span className="text-[11px] text-[#94A3B8]">{formatRelativeTime(t.lastMessageAt) || formatVNDateTime(t.lastMessageAt)}</span>
                       </div>
                     </button>
@@ -283,6 +342,7 @@ export function SupportPage() {
             <NewTicketForm
               key={presetCategory}
               initialCategory={presetCategory}
+              isEn={isEn}
               onCancel={() => setSearchParams({})}
               onCreated={(id) => {
                 loadList();
@@ -293,20 +353,20 @@ export function SupportPage() {
             <>
               <header className="px-5 py-3.5 border-b border-[#E5E7EB]">
                 <button type="button" onClick={() => setSearchParams({})} className="lg:hidden mb-2 inline-flex items-center gap-1 text-[13px] text-[#64748B]">
-                  <ArrowLeft className="w-3.5 h-3.5" /> Danh sách
+                  <ArrowLeft className="w-3.5 h-3.5" /> {isEn ? 'Back to list' : 'Danh sách'}
                 </button>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="text-[15px] font-semibold text-[#334155]">{ticket.subject}</h2>
                     <p className="text-[12px] text-[#64748B] mt-0.5">
-                      #{ticket.id} · {SUPPORT_CATEGORY_LABELS[ticket.category]} · gửi {formatVNDateTime(ticket.createdAt)}
+                      #{ticket.id} · {getCategoryLabel(ticket.category, isEn)} · {isEn ? 'sent' : 'gửi'} {formatVNDateTime(ticket.createdAt)}
                     </p>
                   </div>
-                  <StatusBadge status={ticket.status} />
+                  <StatusBadge status={ticket.status} isEn={isEn} />
                 </div>
                 <p className={`mt-2 text-[12px] flex items-center gap-1.5 ${ticket.status === 'WAITING_STORE' ? 'text-[#B91C1C]' : 'text-[#64748B]'}`}>
                   {ticket.status === 'RESOLVED' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
-                  {STORE_STATUS_HINT[ticket.status]}
+                  {getStoreStatusHint(ticket.status, isEn)}
                 </p>
               </header>
               <div className="flex-1 overflow-y-auto p-5 bg-slate-50/70">
@@ -314,8 +374,8 @@ export function SupportPage() {
               </div>
               <Composer
                 onSend={handleReply}
-                placeholder={ticket.status === 'RESOLVED' ? 'Gửi tin nhắn để mở lại yêu cầu' : 'Nhập tin nhắn cho đội hỗ trợ'}
-                onError={(msg) => toast({ type: 'warning', title: 'Không thêm được ảnh', description: msg })}
+                placeholder={ticket.status === 'RESOLVED' ? (isEn ? 'Send message to reopen ticket' : 'Gửi tin nhắn để mở lại yêu cầu') : (isEn ? 'Type message to support team' : 'Nhập tin nhắn cho đội hỗ trợ')}
+                onError={(msg) => toast({ type: 'warning', title: isEn ? 'Cannot add image' : 'Không thêm được ảnh', description: msg })}
               />
             </>
           ) : selectedId ? (
@@ -327,8 +387,8 @@ export function SupportPage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-10">
               <LifeBuoy className="w-10 h-10 text-[#CBD5E1]" />
-              <p className="mt-3 text-[14px] text-[#334155] font-medium">Chọn một yêu cầu để xem trao đổi</p>
-              <p className="text-[13px] text-[#64748B]">hoặc gửi yêu cầu mới nếu bạn cần giúp đỡ.</p>
+              <p className="mt-3 text-[14px] text-[#334155] font-medium">{isEn ? 'Select a ticket to view the conversation' : 'Chọn một yêu cầu để xem trao đổi'}</p>
+              <p className="text-[13px] text-[#64748B]">{isEn ? 'or submit a new ticket if you need assistance.' : 'hoặc gửi yêu cầu mới nếu bạn cần giúp đỡ.'}</p>
             </div>
           )}
         </section>

@@ -197,7 +197,7 @@ export function LoginPage() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.replace(/\s+/g, ''))}
                   placeholder={isEn ? '••••••••' : '••••••••'}
                   autoComplete="current-password"
                   className="w-full pl-10 pr-10 py-2.5 bg-slate-50 text-slate-900 text-sm rounded-xl border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 font-medium tracking-wide"

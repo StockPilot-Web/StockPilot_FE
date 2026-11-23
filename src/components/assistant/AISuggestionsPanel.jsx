@@ -55,6 +55,29 @@ function kindConfig(kind, isEn) {
   }
 }
 
+function formatSuggestionTitle(title, isEn) {
+  if (!title || !isEn) return title || '';
+  return String(title)
+    .replace(/^Nhập thêm (\d+) (.*)$/i, 'Restock $1 units of $2')
+    .replace(/^Xem cảnh báo:\s*(.*)$/i, 'View alert: $1')
+    .replace(/Cảnh báo thừa hàng/gi, 'Overstock alert')
+    .replace(/Cảnh báo tồn kho thấp/gi, 'Low stock alert')
+    .replace(/Cảnh báo hết hàng/gi, 'Stockout alert')
+    .replace(/Cảnh báo bán chậm/gi, 'Slow-moving alert');
+}
+
+function formatSuggestionReason(reason, isEn) {
+  if (!reason || !isEn) return reason || '';
+  return String(reason)
+    .replace(/Đã hết hàng;\s*thời gian chờ hàng (\d+) ngày\.\s*Decision Engine đề xuất nhập (\d+)\./i,
+      'Out of stock; lead time $1 days. Decision Engine recommends restocking $2 units.')
+    .replace(/Còn (\d+) đơn vị(?:, đủ bán khoảng ([\d.]+) ngày)?;\s*thời gian chờ hàng (\d+) ngày\.\s*Decision Engine đề xuất nhập (\d+)\./i,
+      'Only $1 units left (approx. $2 days cover); lead time $3 days. Decision Engine recommends restocking $4 units.')
+    .replace(/Cảnh báo (\w+) cho mã (\S+), điểm rủi ro (\d+), đã mở (\d+) ngày\./i,
+      'Alert $1 for SKU $2, risk score $3, open for $4 days.')
+    .replace(/Cảnh báo (\w+) cho mã (\S+)/i, 'Alert $1 for SKU $2');
+}
+
 const errorMessage = (err, fallback) => err?.response?.data?.error?.message || err?.message || fallback;
 
 /**
@@ -181,12 +204,12 @@ export function AISuggestionsPanel({ isEn, onClose }) {
             return (
               <div key={key} className={`rounded-xl border border-slate-200 p-3 ${done ? 'bg-slate-50 opacity-70' : 'bg-white'}`}>
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs font-semibold leading-snug text-slate-900">{suggestion.title}</p>
+                  <p className="text-xs font-semibold leading-snug text-slate-900">{formatSuggestionTitle(suggestion.title, isEn)}</p>
                   <span className={`shrink-0 rounded-full border px-1.5 py-px text-[10px] font-semibold ${PRIORITY_STYLE[suggestion.priority] || PRIORITY_STYLE.LOW}`}>
                     {PRIORITY_LABEL[suggestion.priority]?.[isEn ? 'en' : 'vi'] || suggestion.priority}
                   </span>
                 </div>
-                <p className="mt-1 text-[11px] leading-snug text-slate-500">{suggestion.reason}</p>
+                <p className="mt-1 text-[11px] leading-snug text-slate-500">{formatSuggestionReason(suggestion.reason, isEn)}</p>
 
                 <div className="mt-2.5">
                   {done ? (
