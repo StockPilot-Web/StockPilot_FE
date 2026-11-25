@@ -316,19 +316,24 @@ export function PosPage() {
 
   // ── Scanner state ──────────────────────────────────────────────
   const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272?channel-name=production';
+  const isLocalWebHost =
+    typeof window !== 'undefined' &&
+    window.location &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const EXPO_LOCAL_URL =
-    typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    typeof window !== 'undefined' && window.location && !isLocalWebHost
       ? `exp://${window.location.hostname}:8081`
       : 'exp://192.168.102.4:8081';
+  const EXPO_STORAGE_KEY = isLocalWebHost ? 'stockpilot_expo_metro_url_local' : 'stockpilot_expo_metro_url_cloud';
 
   const [scannerOpen, setScannerOpen] = useState(false);
   const [expoQrOpen, setExpoQrOpen] = useState(false);
   const [expoMetroUrl, setExpoMetroUrl] = useState(() => {
     try {
-      const saved = localStorage.getItem('stockpilot_expo_metro_url');
+      const saved = localStorage.getItem(EXPO_STORAGE_KEY);
       if (saved) return saved;
     } catch (_) {}
-    return EXPO_CLOUD_URL;
+    return isLocalWebHost ? EXPO_LOCAL_URL : EXPO_CLOUD_URL;
   });
   const [scannerCode, setScannerCode] = useState(() => {
     try {
@@ -2328,7 +2333,7 @@ export function PosPage() {
                     type="button"
                     onClick={() => {
                       setExpoMetroUrl(EXPO_CLOUD_URL);
-                      try { localStorage.setItem('stockpilot_expo_metro_url', EXPO_CLOUD_URL); } catch (_) {}
+                      try { localStorage.setItem(EXPO_STORAGE_KEY, EXPO_CLOUD_URL); } catch (_) {}
                     }}
                     className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer ${
                       expoMetroUrl === EXPO_CLOUD_URL
@@ -2342,7 +2347,7 @@ export function PosPage() {
                     type="button"
                     onClick={() => {
                       setExpoMetroUrl(EXPO_LOCAL_URL);
-                      try { localStorage.setItem('stockpilot_expo_metro_url', EXPO_LOCAL_URL); } catch (_) {}
+                      try { localStorage.setItem(EXPO_STORAGE_KEY, EXPO_LOCAL_URL); } catch (_) {}
                     }}
                     className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer ${
                       expoMetroUrl === EXPO_LOCAL_URL
@@ -2361,7 +2366,7 @@ export function PosPage() {
                   onChange={(e) => {
                     const next = e.target.value;
                     setExpoMetroUrl(next);
-                    try { localStorage.setItem('stockpilot_expo_metro_url', next); } catch (_) {}
+                    try { localStorage.setItem(EXPO_STORAGE_KEY, next); } catch (_) {}
                   }}
                   placeholder={EXPO_CLOUD_URL}
                   className="flex-1 px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:border-blue-400"
