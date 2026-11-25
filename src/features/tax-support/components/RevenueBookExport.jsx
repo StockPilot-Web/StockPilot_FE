@@ -7,6 +7,15 @@ import { useRevenueBookPreview } from '../queries';
 const vnd = (n) => (n == null ? '–' : `${new Intl.NumberFormat('vi-VN').format(n)} đ`);
 const vnDate = (key) => (key ? key.split('-').reverse().join('/') : '');
 
+function formatPeriodLabel(label, isEn) {
+  if (!label) return '';
+  if (!isEn) return label;
+  return String(label)
+    .replace(/^Quý\s+/i, 'Quarter ')
+    .replace(/^Tháng\s+/i, 'Month ')
+    .replace(/^Năm\s+/i, 'Year ');
+}
+
 // Ngày hôm nay theo giờ Việt Nam (máy người dùng có thể đặt múi giờ khác).
 function todayVN() {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -140,7 +149,7 @@ export function RevenueBookExport({ isEn }) {
         ) : (
           <div className="text-sm text-slate-700">
             <p className="font-medium text-slate-900">
-              {preview.data.periodLabel}
+              {formatPeriodLabel(preview.data.periodLabel, isEn)}
               {preview.data.partialUntil && (
                 <span className="ml-1 font-normal text-amber-700">
                   — {isEn ? 'provisional to' : 'tạm tính đến'} {vnDate(preview.data.partialUntil)}

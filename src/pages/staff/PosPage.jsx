@@ -25,9 +25,46 @@ import {
   apiSaveMomoConfig
 } from '../../services/posService';
 import { apiClient } from '../../lib/apiClient';
+import { BrowserQRCodeSvgWriter } from '@zxing/library';
 import { docSoThanhChu } from '../../utils/numberToWordsVN';
 import { ReceiptPrintContent, ReceiptPrintPortal } from '../../components/pos/ReceiptPrintView';
 
+
+function buildPairingQrPayload(code) {
+  const baseUrl = apiClient.defaults?.baseURL || '';
+  if (baseUrl && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
+    return JSON.stringify({ code, serverUrl: baseUrl });
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    const host = window.location.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return JSON.stringify({ code, serverUrl: `${window.location.protocol}//${host}:5000/api/v1` });
+    }
+  }
+  return JSON.stringify({ code });
+}
+
+function PairingQrSvg({ value, size = 160 }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !value) return;
+    el.innerHTML = '';
+    try {
+      const writer = new BrowserQRCodeSvgWriter();
+      const svg = writer.write(value, size, size);
+      svg.setAttribute('width', String(size));
+      svg.setAttribute('height', String(size));
+      svg.style.display = 'block';
+      el.appendChild(svg);
+    } catch (_) {
+      // Fallback handled cleanly if writer fails
+    }
+  }, [value, size]);
+
+  return <div ref={containerRef} className="inline-flex items-center justify-center bg-white p-2 rounded-xl border border-slate-200 shadow-xs" />;
+}
 
 function safeNum(val) {
   if (val === null || val === undefined) return 0;
@@ -281,10 +318,41 @@ export function PosPage() {
 
 
   // ── Scanner state ──────────────────────────────────────────────
+  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/6e99e6e6-e918-4053-ae62-ef339f0293ba';
+  const isLocalWebHost =
+    typeof window !== 'undefined' &&
+    window.location &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const EXPO_LOCAL_URL =
+    typeof window !== 'undefined' && window.location && !isLocalWebHost
+      ? `exp://${window.location.hostname}:8081`
+      : 'exp://192.168.102.4:8081';
+  const EXPO_STORAGE_KEY = isLocalWebHost ? 'stockpilot_expo_metro_url_local' : 'stockpilot_expo_metro_url_cloud';
+
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [expoQrOpen, setExpoQrOpen] = useState(false);
+  const [expoMetroUrl, setExpoMetroUrl] = useState(() => {
+    try {
+      const saved = localStorage.getItem(EXPO_STORAGE_KEY);
+      if (
+        saved &&
+        !saved.includes('?channel-name=production') &&
+        !saved.includes('dbc6ffad-fc29-4354-98cc-65ac1f04cf7f') &&
+        !saved.includes('f2ae5d90-239f-45e3-8a72-0a1f8a2d9242') &&
+        !saved.includes('e00500ee-9772-44d6-a7a4-c34e10b178e0') &&
+        !saved.includes('8f45a61c-8413-47a4-bb6f-e6099e88ddca') &&
+        !saved.includes('15009017-f185-4838-bb6a-afe6d427fd1a')
+      ) {
+        return saved;
+      }
+    } catch (_) {}
+    return isLocalWebHost ? EXPO_LOCAL_URL : EXPO_CLOUD_URL;
+  });
+  const scannerStorageKey = user?.id ? `stockpilot_pos_scanner_code_${user.id}` : 'stockpilot_pos_scanner_code';
+  const [showScannerCode, setShowScannerCode] = useState(false);
   const [scannerCode, setScannerCode] = useState(() => {
     try {
-      return localStorage.getItem('stockpilot_pos_scanner_code') || null;
+      return localStorage.getItem(scannerStorageKey) || null;
     } catch (_) {
       return null;
     }
@@ -402,7 +470,7 @@ export function PosPage() {
       if (!res.ok) {
         if (res.status === 404) {
           // Session doesn't exist anymore on server
-          try { localStorage.removeItem('stockpilot_pos_scanner_code'); } catch (_) {}
+          try { localStorage.removeItem(scannerStorageKey); } catch (_) {}
           setScannerCode(null);
           setScannerStatus('idle');
           return;
@@ -410,7 +478,7 @@ export function PosPage() {
         setScannerStatus('error');
         // Schedule auto-reconnect
         reconnectTimeoutRef.current = setTimeout(() => {
-          const currentSaved = localStorage.getItem('stockpilot_pos_scanner_code');
+          const currentSaved = localStorage.getItem(scannerStorageKey);
           if (currentSaved) openSseStream(currentSaved);
         }, 5000);
         return;
@@ -440,7 +508,7 @@ export function PosPage() {
               setLastScan(payload);
               toast({ title: `✓ Quét: ${payload.name}`, description: `${payload.sku} — ${Number(payload.sellingPrice).toLocaleString('vi-VN')} đ`, type: 'success' });
             } else if (eventName === 'expired' || eventName === 'closed') {
-              try { localStorage.removeItem('stockpilot_pos_scanner_code'); } catch (_) {}
+              try { localStorage.removeItem(scannerStorageKey); } catch (_) {}
               setScannerStatus('idle');
               setScannerCode(null);
             }
@@ -449,7 +517,7 @@ export function PosPage() {
       }
 
       // If disconnected without error and session code still saved, reconnect
-      const savedCode = localStorage.getItem('stockpilot_pos_scanner_code');
+      const savedCode = localStorage.getItem(scannerStorageKey);
       if (savedCode && !ctrl.signal.aborted) {
         setScannerStatus('connecting');
         reconnectTimeoutRef.current = setTimeout(() => {
@@ -461,7 +529,7 @@ export function PosPage() {
     }).catch((err) => {
       if (err.name !== 'AbortError') {
         setScannerStatus('error');
-        const savedCode = localStorage.getItem('stockpilot_pos_scanner_code');
+        const savedCode = localStorage.getItem(scannerStorageKey);
         if (savedCode) {
           reconnectTimeoutRef.current = setTimeout(() => {
             openSseStream(savedCode);
@@ -469,21 +537,44 @@ export function PosPage() {
         }
       }
     });
-  }, [addScannedItemToCart]);
+  }, [addScannedItemToCart, scannerStorageKey]);
 
   // Create a pairing session and open SSE stream
-  const startScannerSession = async () => {
+  const startScannerSession = async (showToast = false) => {
     setScannerStatus('connecting');
     try {
       const { data } = await apiClient.post('/scanner/sessions', { label: 'POS Web' });
       const code = data.data.code;
       setScannerCode(code);
-      try { localStorage.setItem('stockpilot_pos_scanner_code', code); } catch (_) {}
+      try { localStorage.setItem(scannerStorageKey, code); } catch (_) {}
       openSseStream(code);
+      if (showToast) {
+        toast({
+          title: isEn ? `New code generated: ${code}` : `Đã tạo mã mới: ${code}`,
+          type: 'success',
+        });
+      }
     } catch (err) {
       setScannerStatus('error');
       toast({ title: 'Không thể tạo phiên Scanner', description: err?.response?.data?.error?.message || err.message, type: 'error' });
     }
+  };
+
+  const regenerateScannerSession = async () => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    if (sseRef.current) {
+      try { sseRef.current.abort(); } catch (_) {}
+      sseRef.current = null;
+    }
+    if (scannerCode) {
+      try { await apiClient.delete(`/scanner/sessions/${scannerCode}`); } catch (_) {}
+    }
+    try { localStorage.removeItem(scannerStorageKey); } catch (_) {}
+    setScannerCode(null);
+    await startScannerSession(true);
   };
 
   const stopScannerSession = async () => {
@@ -498,19 +589,19 @@ export function PosPage() {
     if (scannerCode) {
       try { await apiClient.delete(`/scanner/sessions/${scannerCode}`); } catch (_) {}
     }
-    try { localStorage.removeItem('stockpilot_pos_scanner_code'); } catch (_) {}
+    try { localStorage.removeItem(scannerStorageKey); } catch (_) {}
     setScannerCode(null);
     setScannerStatus('idle');
     setLastScan(null);
   };
 
-  // Auto-restore / Auto-connect scanner session on mount
+  // Auto-restore / Auto-connect scanner session on mount or user change
   useEffect(() => {
     let isCancelled = false;
     const restoreSession = async () => {
       try {
-        const storedCode = localStorage.getItem('stockpilot_pos_scanner_code');
-        // Fetch active sessions from server for current store
+        const storedCode = localStorage.getItem(scannerStorageKey);
+        // Fetch active sessions from server for current user
         const res = await apiClient.get('/scanner/sessions');
         const sessions = res?.data?.data || [];
         if (isCancelled) return;
@@ -518,11 +609,13 @@ export function PosPage() {
         if (sessions.length > 0) {
           const activeCode = sessions[0].code;
           setScannerCode(activeCode);
-          try { localStorage.setItem('stockpilot_pos_scanner_code', activeCode); } catch (_) {}
+          try { localStorage.setItem(scannerStorageKey, activeCode); } catch (_) {}
           openSseStream(activeCode);
         } else if (storedCode) {
           setScannerCode(storedCode);
           openSseStream(storedCode);
+        } else {
+          await startScannerSession();
         }
       } catch (err) {
         console.warn('Không thể tự động khôi phục scanner session:', err);
@@ -1202,7 +1295,11 @@ export function PosPage() {
 
     // ── XỬ LÝ THANH TOÁN TIỀN MẶT (CASH) ──
     if (customerPayNum < totalPayable && paymentMethod === 'CASH') {
-      toast({ title: 'Chưa đủ tiền', description: 'Tiền khách đưa nhỏ hơn tổng cần thanh toán', type: 'error' });
+      toast({
+        title: isEn ? 'Insufficient payment' : 'Chưa đủ tiền',
+        description: isEn ? 'Amount tendered is less than total payable' : 'Tiền khách đưa nhỏ hơn tổng cần thanh toán',
+        type: 'error'
+      });
       return;
     }
 
@@ -1335,20 +1432,37 @@ export function PosPage() {
             </span>
 
 
-            {/* Scanner connect button */}
+            {/* Generate new pairing code button */}
             <button
-              onClick={() => setScannerOpen(true)}
-              title={t('scannerPairingTitle', 'Kết nối máy quét mã vạch')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+              type="button"
+              onClick={() => {
+                setShowScannerCode(true);
+                regenerateScannerSession();
+              }}
+              title={isEn ? 'Click to generate a new pairing code' : 'Bấm để tạo mã mới'}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                 scannerStatus === 'connected'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
                   : scannerStatus === 'connecting'
                   ? 'bg-amber-50 text-amber-700 border-amber-300 animate-pulse'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
               }`}
             >
               {scannerStatus === 'connected' ? <Wifi className="w-3.5 h-3.5" /> : scannerStatus === 'connecting' ? <Wifi className="w-3.5 h-3.5" /> : <Scan className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{scannerStatus === 'connected' ? t('scanner', 'Scanner') : t('scannerIdle', 'Quét mã')}</span>
+              <span className={`hidden sm:inline ${showScannerCode && scannerCode ? 'font-mono tracking-wider' : ''}`}>
+                {showScannerCode && scannerCode ? scannerCode : (isEn ? 'Generate Code' : 'Tạo mã')}
+              </span>
+            </button>
+
+            {/* Connect Expo App (Open in Expo Go QR) button */}
+            <button
+              type="button"
+              onClick={() => setExpoQrOpen(true)}
+              title={isEn ? 'Open StockPilot App in Expo Go via QR Code' : 'Mở App trên Expo Go qua mã QR'}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isEn ? 'Connect App' : 'Kết nối App'}</span>
             </button>
           </div>
         </div>
@@ -1712,13 +1826,6 @@ export function PosPage() {
                           e.target.src = "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=200&h=200&fit=crop";
                         }}
                       />
-                      {isOutOfStock && (
-                        <div className="absolute bottom-0 inset-x-0 bg-red-600/90 py-0.5 flex items-center justify-center z-10">
-                          <span className="text-white text-[7.5px] sm:text-[8px] font-bold tracking-tight uppercase text-center leading-none">
-                            {isEn ? 'Out of stock' : 'Hết hàng'}
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Product Info on the Right */}
@@ -1750,15 +1857,9 @@ export function PosPage() {
                         }`}>
                           {Number(price).toLocaleString('vi-VN')}
                         </p>
-                        {isOutOfStock ? (
-                          <span className="text-[10px] text-red-500 font-bold">
-                            {isEn ? 'Out of stock' : 'Hết hàng'}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            {isEn ? `Stock: ${stock}` : `Còn: ${stock}`}
-                          </span>
-                        )}
+                        <span className={`text-[10px] ${isOutOfStock ? 'text-red-500 font-bold' : 'text-slate-400 font-medium'}`}>
+                          {isEn ? `Stock: ${Math.max(0, stock)}` : `Còn: ${Math.max(0, stock)}`}
+                        </span>
                       </div>
                     </div>
                   </button>
@@ -1936,7 +2037,7 @@ export function PosPage() {
                     onClick={() => setAmountGiven(String(totalPayable))}
                     className="px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all cursor-pointer"
                   >
-                    Đủ tiền
+                    {language === 'en' ? 'Exact' : 'Đủ tiền'}
                   </button>
                   {[50000, 100000, 200000, 500000].map((val) => (
                     <button
@@ -2147,91 +2248,108 @@ export function PosPage() {
         </div>
       )}
 
-      {/* ── Scanner Pairing Modal ──────────────────────────────── */}
-      {scannerOpen && (
-        <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setScannerOpen(false)}>
+      {/* ── Expo Go Launch QR Modal ─────────────────────────────── */}
+      {expoQrOpen && (
+        <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setExpoQrOpen(false)}>
           <div
-            className="bg-white rounded-2xl shadow-2xl w-90 p-6 flex flex-col gap-4"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <Scan className="w-5 h-5 text-blue-600" />
+                  <Smartphone className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-slate-800 text-base">{t('scannerPairingTitle', 'StockPilot Scanner')}</h2>
-                  <p className="text-xs text-slate-500">{t('scannerPairingSub', 'Kết nối app điện thoại')}</p>
+                  <h2 className="font-bold text-slate-800 text-base">
+                    {isEn ? 'Open in Expo Go' : 'Mở App bằng Expo Go'}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {isEn ? 'Scan the QR code below with your phone' : 'Quét mã QR dưới đây để mở trên Expo Go'}
+                  </p>
                 </div>
               </div>
-              <button onClick={() => setScannerOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+              <button type="button" onClick={() => setExpoQrOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium ${
-              scannerStatus === 'connected' ? 'bg-emerald-50 text-emerald-700' :
-              scannerStatus === 'connecting' ? 'bg-amber-50 text-amber-700' :
-              scannerStatus === 'error' ? 'bg-red-50 text-red-600' :
-              'bg-slate-50 text-slate-500'
-            }`}>
-              {scannerStatus === 'connected' && <><Wifi className="w-4 h-4" /><span>{language === 'vi' ? 'Đã kết nối — đang chờ quét' : 'Connected — ready to scan'}</span></>}
-              {scannerStatus === 'connecting' && <><Wifi className="w-4 h-4 animate-pulse" /><span>{t('scannerScanning', 'Đang kết nối...')}</span></>}
-              {scannerStatus === 'error' && <><WifiOff className="w-4 h-4" /><span>{language === 'vi' ? 'Lỗi kết nối' : 'Connection Error'}</span></>}
-              {scannerStatus === 'idle' && <><Link2 className="w-4 h-4" /><span>{language === 'vi' ? 'Chưa kết nối' : 'Not Connected'}</span></>}
+            <div className="border-2 border-blue-100 rounded-2xl p-4 bg-slate-50/50 flex flex-col items-center gap-3">
+              <PairingQrSvg value={expoMetroUrl.trim() || EXPO_CLOUD_URL} size={200} />
+              <p className="text-[11px] font-medium text-slate-500 text-center">
+                {isEn
+                  ? 'Point your iPhone Camera or Expo Go scanner at this QR code.'
+                  : 'Dùng Camera iPhone hoặc ứng dụng Expo Go quét mã QR này.'}
+              </p>
             </div>
 
-            {scannerCode ? (
-              <div className="border-2 border-blue-100 rounded-xl p-4 text-center space-y-3">
-                <p className="text-xs text-slate-500 font-medium">{t('scannerPairCodeLabel', 'Mã ghép nối (nhập trên app điện thoại)')}</p>
-                <div className="flex items-center justify-center gap-2">
-                  {scannerCode.split('').map((ch, i) => (
-                    <span key={i} className="w-10 h-12 flex items-center justify-center bg-blue-600 text-white text-xl font-black rounded-lg shadow">
-                      {ch}
-                    </span>
-                  ))}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="block text-[11px] font-semibold text-slate-600">
+                  {isEn ? 'Expo Go URL' : 'Địa chỉ mở Expo Go'}
+                </label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExpoMetroUrl(EXPO_CLOUD_URL);
+                      try { localStorage.setItem(EXPO_STORAGE_KEY, EXPO_CLOUD_URL); } catch (_) {}
+                    }}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer ${
+                      expoMetroUrl === EXPO_CLOUD_URL
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    Expo Cloud (24/7)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExpoMetroUrl(EXPO_LOCAL_URL);
+                      try { localStorage.setItem(EXPO_STORAGE_KEY, EXPO_LOCAL_URL); } catch (_) {}
+                    }}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer ${
+                      expoMetroUrl === EXPO_LOCAL_URL
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    Local
+                  </button>
                 </div>
-                <p className="text-[11px] text-emerald-600 font-medium">{t('scannerAutoSaved', '✓ Mã tự động lưu — Chỉ reset khi đăng xuất')}</p>
               </div>
-            ) : (
-              <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-400 text-sm">
-                {language === 'vi' ? 'Nhấn nút bên dưới để tạo mã ghép nối' : 'Click the button below to generate a pairing code'}
-              </div>
-            )}
-
-            {lastScan && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 text-sm">
-                <p className="text-xs text-emerald-600 font-semibold mb-0.5">{t('scannerRecentScan', 'Vừa quét:')}</p>
-                <p className="font-bold text-slate-800">{lastScan.name}</p>
-                <p className="text-xs text-slate-500">{lastScan.sku} — {Number(lastScan.sellingPrice).toLocaleString('vi-VN')} đ</p>
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              {(scannerStatus === 'idle' || scannerStatus === 'error') ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={expoMetroUrl}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setExpoMetroUrl(next);
+                    try { localStorage.setItem(EXPO_STORAGE_KEY, next); } catch (_) {}
+                  }}
+                  placeholder={EXPO_CLOUD_URL}
+                  className="flex-1 px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:border-blue-400"
+                />
                 <button
-                  onClick={startScannerSession}
-                  className="flex-1 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                  type="button"
+                  onClick={() => handleCopyText('expo_metro', expoMetroUrl)}
+                  title={isEn ? 'Copy URL' : 'Sao chép'}
+                  className="px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 cursor-pointer"
                 >
-                  <Scan className="w-4 h-4" />
-                  {t('scannerGenerateCode', 'Tạo mã ghép nối')}
+                  {copiedField === 'expo_metro' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                 </button>
-              ) : (
-                <button
-                  onClick={stopScannerSession}
-                  className="flex-1 py-2.5 bg-slate-100 text-slate-600 text-sm font-bold rounded-xl hover:bg-red-50 hover:text-red-600 transition-all flex items-center justify-center gap-2"
-                >
-                  <WifiOff className="w-4 h-4" />
-                  {t('scannerDisconnect', 'Ngắt kết nối')}
-                </button>
-              )}
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {expoMetroUrl.includes('u.expo.dev')
+                  ? (isEn
+                      ? 'Runs directly from Expo Cloud 24/7 — works on VPS without local Metro.'
+                      : 'Chạy trực tiếp từ Expo Cloud 24/7 — dùng được ngay trên VPS mà không cần bật máy tính.')
+                  : (isEn
+                      ? 'Make sure `npx expo start` is running and phone is on the same Wi-Fi.'
+                      : 'Đảm bảo đã chạy `npx expo start` ở App mobile và điện thoại cùng Wi-Fi.')}
+              </p>
             </div>
-
-            <p className="text-[11px] text-slate-400 text-center">
-              {language === 'vi' 
-                ? <>Mở app <strong>StockPilot Scanner</strong> trên điện thoại → Đăng nhập → Nhập mã → Quét mã vạch</>
-                : <>Open <strong>StockPilot Scanner</strong> app on phone → Log in → Enter code → Scan barcode</>}
-            </p>
           </div>
         </div>
       )}
