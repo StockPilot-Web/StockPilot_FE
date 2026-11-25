@@ -65,6 +65,9 @@ function getProductImage(prod) {
 const PAGE_CSS = `
 .pp-root {
   padding: 20px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
@@ -175,6 +178,12 @@ const PAGE_CSS = `
   position: relative;
   z-index: 1;
   flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .pp-header { flex-direction: column; align-items: stretch; }
+  .pp-header-actions { width: 100%; flex-wrap: wrap; }
+  .pp-header-actions .pp-btn-refresh,
+  .pp-header-actions .pp-btn-add { flex: 1 1 0; justify-content: center; min-width: 0; }
 }
 .pp-btn-refresh {
   display: flex;
@@ -294,6 +303,8 @@ const PAGE_CSS = `
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
+  overflow: hidden;
 }
 .pp-cat-card-header {
   display: flex;
@@ -324,6 +335,8 @@ const PAGE_CSS = `
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding-bottom: 2px;
+  min-width: 0;
+  max-width: 100%;
 }
 .pp-cat-pills-wrap::-webkit-scrollbar {
   display: none;
@@ -379,6 +392,7 @@ const PAGE_CSS = `
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  min-width: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 .pp-status-tabs {
@@ -389,6 +403,9 @@ const PAGE_CSS = `
   border-radius: 12px;
   padding: 4px;
   flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 .pp-status-tab-btn {
   padding: 7px 13px;
@@ -417,6 +434,10 @@ const PAGE_CSS = `
   position: relative;
   flex: 1;
   min-width: 220px;
+}
+@media (max-width: 640px) {
+  .pp-status-tabs { width: 100%; }
+  .pp-search-box { flex-basis: 100%; min-width: 0; }
 }
 .pp-search-icon {
   position: absolute;

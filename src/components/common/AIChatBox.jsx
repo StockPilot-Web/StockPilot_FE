@@ -192,7 +192,7 @@ export function AIChatBox() {
     stopListening,
     speak,
     stopSpeaking,
-  } = useVoiceAssistant();
+  } = useVoiceAssistant({ language });
 
   const [voiceInterimText, setVoiceInterimText] = useState('');
 
@@ -368,7 +368,7 @@ export function AIChatBox() {
       {/* FLOATING CHAT BOX POPUP */}
       {/* ========================================================================= */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 sm:right-6 w-[360px] sm:w-[410px] h-[550px] max-h-[82vh] bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),0_0_0_1px_rgba(0,0,0,0.06)] border border-slate-200/80 flex flex-col overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-6 zoom-in-95 duration-200">
+        <div className="fixed bottom-20 right-4 sm:right-6 w-[calc(100vw-2rem)] max-w-[410px] h-[550px] max-h-[82vh] bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),0_0_0_1px_rgba(0,0,0,0.06)] border border-slate-200/80 flex flex-col overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-6 zoom-in-95 duration-200">
           
           {/* Header */}
           <div className="p-3.5 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white flex items-center justify-between shadow-xs">

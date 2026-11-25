@@ -162,7 +162,7 @@ export function AnalyticsPage() {
   const currentRangeLabel = isEn ? currentRangeObj?.labelEn : currentRangeObj?.labelVi;
 
   return (
-    <div className="analytics-page-scoped space-y-6 max-w-7xl mx-auto pb-16">
+    <div className="analytics-page-scoped space-y-6 max-w-7xl w-full min-w-0 mx-auto pb-16">
       <style>{`
         .analytics-page-scoped {
           --ifm-color-primary: #2563eb;
@@ -609,7 +609,7 @@ export function AnalyticsPage() {
                   return (
                     <div key={idx} className="flex-1 min-w-[32px] flex flex-col items-center gap-1 group relative">
                       {/* Tooltip on hover */}
-                      <div className="absolute -top-14 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[11px] rounded-lg px-2.5 py-1.5 pointer-events-none whitespace-nowrap z-20 shadow-lg border border-slate-800">
+                      <div className="hidden sm:block absolute -top-14 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[11px] rounded-lg px-2.5 py-1.5 pointer-events-none whitespace-nowrap z-20 shadow-lg border border-slate-800">
                         <p className="font-bold">{s.label}</p>
                         <p>{isEn ? 'Revenue: ' : 'Doanh thu: '}{formatVND(s.revenue)}</p>
                         <p className="text-emerald-400">{isEn ? 'Profit: ' : 'Lãi: '}{formatVND(s.profit)} ({s.orderCount} {isEn ? 'orders' : 'đơn'})</p>

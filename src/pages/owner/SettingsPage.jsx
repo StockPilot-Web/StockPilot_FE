@@ -27,7 +27,7 @@ import { Database } from 'lucide-react';
 
 /* ─── Inline CSS ─── */
 const CSS = `
-.st-root { font-family:var(--font-ui); }
+.st-root { width:100%; min-width:0; box-sizing:border-box; font-family:var(--font-ui); }
 .st-header {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -156,6 +156,11 @@ const CSS = `
 }
 .st-tab.active { border-bottom-color:#0ea5e9; color:#0284c7; }
 .st-tab:hover:not(.active) { color:#0f172a; border-bottom-color:#cbd5e1; }
+.st-tab:focus-visible,
+.st-btn-primary:focus-visible,
+.st-btn-secondary:focus-visible,
+.st-btn-danger:focus-visible,
+.st-eye-btn:focus-visible { outline:3px solid rgba(14,165,233,.45); outline-offset:2px; }
 .st-card {
   background:#fff; border:1px solid #edf2f7; border-radius:18px;
   box-shadow:0 2px 8px rgba(0,0,0,.035);
@@ -167,7 +172,7 @@ const CSS = `
 .st-section-desc { font-size:12px; color:#64748b; font-weight:500; }
 .st-label { font-size:12px; font-weight:700; color:#374151; display:block; margin-bottom:6px; }
 .st-input {
-  width:100%; padding:10px 14px; border:1.5px solid #e2e8f0;
+  width:100%; min-height:44px; padding:10px 14px; border:1.5px solid #e2e8f0;
   border-radius:12px; font-size:13px; background:#f8fafc;
   transition:border-color .18s,box-shadow .18s; box-sizing:border-box;
   color:#0f172a; font-family:inherit;
@@ -179,7 +184,7 @@ const CSS = `
 .st-eye-btn {
   position:absolute; right:13px; top:50%; transform:translateY(-50%);
   background:none; border:none; cursor:pointer; color:#94a3b8;
-  display:flex; align-items:center; padding:2px;
+  display:flex; align-items:center; justify-content:center; width:44px; height:44px; padding:0;
 }
 .st-eye-btn:hover { color:#0284c7; }
 .st-btn-primary {
@@ -283,9 +288,9 @@ function SliderField({ label, value, min, max, unit, desc, onChange }) {
   );
 }
 
-function Toggle({ checked, onChange }) {
+function Toggle({ checked, onChange, label }) {
   return (
-    <button type="button" onClick={e => { e.stopPropagation(); onChange(!checked); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+    <button type="button" aria-label={label} aria-pressed={checked} onClick={e => { e.stopPropagation(); onChange(!checked); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 44, minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className={`st-toggle-track ${checked ? 'on' : 'off'}`}>
         <div className="st-toggle-thumb" />
       </div>
@@ -640,28 +645,28 @@ export function SettingsPage() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 18 }}>
                   <div>
-                    <label className="st-label">{isEn ? 'Store Name' : 'Tên cửa hàng'}</label>
-                    <input className="st-input" value={storeName} onChange={e => setStoreName(e.target.value)} placeholder={isEn ? "Minh Phat Grocery" : "Tạp hóa Minh Phát"} required />
+                    <label className="st-label" htmlFor="settings-store-name">{isEn ? 'Store Name' : 'Tên cửa hàng'}</label>
+                    <input id="settings-store-name" name="storeName" autoComplete="organization" className="st-input" value={storeName} onChange={e => setStoreName(e.target.value)} placeholder={isEn ? "Minh Phat Grocery…" : "Tạp hóa Minh Phát…"} required />
                   </div>
                   <div>
-                    <label className="st-label">{isEn ? 'Phone / Hotline' : 'Số điện thoại / Hotline'}</label>
-                    <input className="st-input" value={storePhone} onChange={e => setStorePhone(e.target.value)} placeholder="0908 123 456" />
+                    <label className="st-label" htmlFor="settings-store-phone">{isEn ? 'Phone / Hotline' : 'Số điện thoại / Hotline'}</label>
+                    <input id="settings-store-phone" name="phone" autoComplete="tel" type="tel" className="st-input" value={storePhone} onChange={e => setStorePhone(e.target.value)} placeholder="0908 123 456…" />
                   </div>
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label className="st-label">{isEn ? 'Main Warehouse Address' : 'Địa chỉ kho hàng chính'}</label>
-                    <input className="st-input" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} placeholder={isEn ? "Address, street, ward, city" : "Số nhà, đường, phường, quận, thành phố"} />
+                    <label className="st-label" htmlFor="settings-store-address">{isEn ? 'Main Warehouse Address' : 'Địa chỉ kho hàng chính'}</label>
+                    <input id="settings-store-address" name="streetAddress" autoComplete="street-address" className="st-input" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} placeholder={isEn ? "Address, street, ward, city…" : "Số nhà, đường, phường, quận, thành phố…"} />
                   </div>
                   <div>
-                    <label className="st-label">{isEn ? 'Store Code (immutable)' : 'Mã cửa hàng (không thể thay đổi)'}</label>
-                    <input className="st-input" value={storeCode} disabled />
+                    <label className="st-label" htmlFor="settings-store-code">{isEn ? 'Store Code (immutable)' : 'Mã cửa hàng (không thể thay đổi)'}</label>
+                    <input id="settings-store-code" name="storeCode" className="st-input" value={storeCode} disabled />
                   </div>
                   <div>
-                    <label className="st-label">{isEn ? 'Currency' : 'Đơn vị tiền tệ'}</label>
-                    <input className="st-input" value="VND (₫)" disabled />
+                    <label className="st-label" htmlFor="settings-currency">{isEn ? 'Currency' : 'Đơn vị tiền tệ'}</label>
+                    <input id="settings-currency" name="currency" className="st-input" value="VND (₫)" disabled />
                   </div>
                   <div>
-                    <label className="st-label">{isEn ? 'System Timezone' : 'Múi giờ hệ thống'}</label>
-                    <input className="st-input" value="Asia/Ho_Chi_Minh (GMT+7)" disabled />
+                    <label className="st-label" htmlFor="settings-timezone">{isEn ? 'System Timezone' : 'Múi giờ hệ thống'}</label>
+                    <input id="settings-timezone" name="timezone" className="st-input" value="Asia/Ho_Chi_Minh (GMT+7)" disabled />
                   </div>
                 </div>
                 <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end' }}>
@@ -842,7 +847,7 @@ export function SettingsPage() {
                         <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{item.desc}</div>
                       </div>
                     </div>
-                    <Toggle checked={notif[item.key]} onChange={v => setNotif(p => ({ ...p, [item.key]: v }))} />
+                    <Toggle label={item.label} checked={notif[item.key]} onChange={v => setNotif(p => ({ ...p, [item.key]: v }))} />
                   </div>
                 ))}
               </div>
@@ -891,12 +896,12 @@ export function SettingsPage() {
               <form onSubmit={handleUpdateProfile}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 16, maxWidth: 600 }}>
                   <div>
-                    <label className="st-label">{isEn ? 'Full Name' : 'Họ và tên'}</label>
-                    <input className="st-input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder={isEn ? "Enter your full name" : "Nhập họ và tên của bạn"} required />
+                    <label className="st-label" htmlFor="settings-full-name">{isEn ? 'Full Name' : 'Họ và tên'}</label>
+                    <input id="settings-full-name" name="fullName" autoComplete="name" className="st-input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder={isEn ? "Enter your full name…" : "Nhập họ và tên của bạn…"} required />
                   </div>
                   <div>
-                    <label className="st-label">{isEn ? 'Account Email (immutable)' : 'Email tài khoản (không thể đổi)'}</label>
-                    <input className="st-input" value={user?.email || ''} disabled />
+                    <label className="st-label" htmlFor="settings-account-email">{isEn ? 'Account Email (immutable)' : 'Email tài khoản (không thể đổi)'}</label>
+                    <input id="settings-account-email" name="email" autoComplete="email" type="email" className="st-input" value={user?.email || ''} disabled />
                   </div>
                 </div>
                 <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end' }}>
@@ -1068,17 +1073,17 @@ export function SettingsPage() {
               <form onSubmit={handleChangePassword}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 440 }}>
                   <div>
-                    <label className="st-label">{isEn ? 'Current Password' : 'Mật khẩu hiện tại'}</label>
+                    <label className="st-label" htmlFor="settings-current-password">{isEn ? 'Current Password' : 'Mật khẩu hiện tại'}</label>
                     <div className="st-input-wrap">
-                      <input className="st-input" type={showOld ? 'text' : 'password'} value={oldPwd} onChange={e => setOldPwd(e.target.value)} placeholder={isEn ? "Enter current password" : "Nhập mật khẩu hiện tại"} autoComplete="current-password" />
-                      <button type="button" className="st-eye-btn" onClick={() => setShowOld(v => !v)}>{showOld ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                      <input id="settings-current-password" name="currentPassword" className="st-input" type={showOld ? 'text' : 'password'} value={oldPwd} onChange={e => setOldPwd(e.target.value)} placeholder={isEn ? "Enter current password…" : "Nhập mật khẩu hiện tại…"} autoComplete="current-password" />
+                      <button type="button" className="st-eye-btn" aria-label={showOld ? (isEn ? 'Hide current password' : 'Ẩn mật khẩu hiện tại') : (isEn ? 'Show current password' : 'Hiện mật khẩu hiện tại')} onClick={() => setShowOld(v => !v)}>{showOld ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}</button>
                     </div>
                   </div>
                   <div>
-                    <label className="st-label">{isEn ? 'New Password' : 'Mật khẩu mới'}</label>
+                    <label className="st-label" htmlFor="settings-new-password">{isEn ? 'New Password' : 'Mật khẩu mới'}</label>
                     <div className="st-input-wrap">
-                      <input className="st-input" type={showNew ? 'text' : 'password'} value={newPwd} onChange={e => setNewPwd(e.target.value)} placeholder={isEn ? "Minimum 8 characters" : "Tối thiểu 8 ký tự"} autoComplete="new-password" />
-                      <button type="button" className="st-eye-btn" onClick={() => setShowNew(v => !v)}>{showNew ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                      <input id="settings-new-password" name="newPassword" className="st-input" type={showNew ? 'text' : 'password'} value={newPwd} onChange={e => setNewPwd(e.target.value)} placeholder={isEn ? "Minimum 8 characters…" : "Tối thiểu 8 ký tự…"} autoComplete="new-password" />
+                      <button type="button" className="st-eye-btn" aria-label={showNew ? (isEn ? 'Hide new password' : 'Ẩn mật khẩu mới') : (isEn ? 'Show new password' : 'Hiện mật khẩu mới')} onClick={() => setShowNew(v => !v)}>{showNew ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}</button>
                     </div>
                     {newPwd && (
                       <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1088,10 +1093,10 @@ export function SettingsPage() {
                     )}
                   </div>
                   <div>
-                    <label className="st-label">{isEn ? 'Confirm New Password' : 'Xác nhận mật khẩu mới'}</label>
+                    <label className="st-label" htmlFor="settings-confirm-password">{isEn ? 'Confirm New Password' : 'Xác nhận mật khẩu mới'}</label>
                     <div className="st-input-wrap">
-                      <input className="st-input" type={showConfirm ? 'text' : 'password'} value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} placeholder={isEn ? "Re-enter new password" : "Nhập lại mật khẩu mới"} autoComplete="new-password" style={confirmPwd && newPwd !== confirmPwd ? { borderColor: '#ef4444' } : {}} />
-                      <button type="button" className="st-eye-btn" onClick={() => setShowConfirm(v => !v)}>{showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                      <input id="settings-confirm-password" name="confirmPassword" className="st-input" type={showConfirm ? 'text' : 'password'} value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} placeholder={isEn ? "Re-enter new password…" : "Nhập lại mật khẩu mới…"} autoComplete="new-password" style={confirmPwd && newPwd !== confirmPwd ? { borderColor: '#ef4444' } : {}} />
+                      <button type="button" className="st-eye-btn" aria-label={showConfirm ? (isEn ? 'Hide confirmation password' : 'Ẩn mật khẩu xác nhận') : (isEn ? 'Show confirmation password' : 'Hiện mật khẩu xác nhận')} onClick={() => setShowConfirm(v => !v)}>{showConfirm ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}</button>
                     </div>
                     {confirmPwd && newPwd !== confirmPwd && <p style={{ color: '#dc2626', fontSize: 11, marginTop: 5, fontWeight: 600 }}>{isEn ? '⚠ Passwords do not match' : '⚠ Mật khẩu không khớp'}</p>}
                   </div>
@@ -1122,6 +1127,7 @@ export function SettingsPage() {
                 </div>
                 <button
                   type="button"
+                  aria-label={isEn ? 'Close create staff dialog' : 'Đóng hộp thoại tạo nhân viên'}
                   onClick={() => setIsAddStaffModalOpen(false)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}
                 >
@@ -1131,19 +1137,25 @@ export function SettingsPage() {
 
               <form onSubmit={handleCreateStaff} style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <label className="st-label">{isEn ? 'Staff Full Name' : 'Họ và tên nhân viên'}</label>
+                  <label className="st-label" htmlFor="settings-new-staff-name">{isEn ? 'Staff Full Name' : 'Họ và tên nhân viên'}</label>
                   <input
+                    id="settings-new-staff-name"
+                    name="staffName"
+                    autoComplete="name"
                     className="st-input"
                     value={newStaffName}
                     onChange={e => setNewStaffName(e.target.value)}
-                    placeholder={isEn ? "E.g.: John Doe" : "Ví dụ: Nguyễn Văn Kho"}
+                    placeholder={isEn ? "E.g.: John Doe…" : "Ví dụ: Nguyễn Văn Kho…"}
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="st-label">{isEn ? 'Login Email' : 'Email đăng nhập'}</label>
+                  <label className="st-label" htmlFor="settings-new-staff-email">{isEn ? 'Login Email' : 'Email đăng nhập'}</label>
                   <input
+                    id="settings-new-staff-email"
+                    name="staffEmail"
+                    autoComplete="email"
                     className="st-input"
                     type="email"
                     value={newStaffEmail}
@@ -1154,13 +1166,16 @@ export function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="st-label">{isEn ? 'Initial Password' : 'Mật khẩu khởi tạo'}</label>
+                  <label className="st-label" htmlFor="settings-new-staff-password">{isEn ? 'Initial Password' : 'Mật khẩu khởi tạo'}</label>
                   <input
+                    id="settings-new-staff-password"
+                    name="staffPassword"
+                    autoComplete="new-password"
                     className="st-input"
                     type="password"
                     value={newStaffPassword}
                     onChange={e => setNewStaffPassword(e.target.value)}
-                    placeholder={isEn ? "Minimum 6 characters" : "Tối thiểu 6 ký tự"}
+                    placeholder={isEn ? "Minimum 6 characters…" : "Tối thiểu 6 ký tự…"}
                     required
                   />
                 </div>

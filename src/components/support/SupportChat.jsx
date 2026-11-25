@@ -9,12 +9,17 @@ import { formatVNDateTime } from '../../services/adminService';
  */
 export function usePolling(fn, ms, enabled = true) {
   const fnRef = useRef(fn);
+  const runningRef = useRef(false);
   fnRef.current = fn;
 
   useEffect(() => {
     if (!enabled) return undefined;
     const tick = () => {
-      if (document.visibilityState === 'visible') fnRef.current();
+      if (document.visibilityState !== 'visible' || runningRef.current) return;
+      runningRef.current = true;
+      Promise.resolve(fnRef.current()).finally(() => {
+        runningRef.current = false;
+      });
     };
     const timer = setInterval(tick, ms);
     document.addEventListener('visibilitychange', tick);
