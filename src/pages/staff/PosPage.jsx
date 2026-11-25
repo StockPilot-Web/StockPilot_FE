@@ -344,6 +344,7 @@ export function PosPage() {
     return isLocalWebHost ? EXPO_LOCAL_URL : EXPO_CLOUD_URL;
   });
   const scannerStorageKey = user?.id ? `stockpilot_pos_scanner_code_${user.id}` : 'stockpilot_pos_scanner_code';
+  const [showScannerCode, setShowScannerCode] = useState(false);
   const [scannerCode, setScannerCode] = useState(() => {
     try {
       return localStorage.getItem(scannerStorageKey) || null;
@@ -1417,7 +1418,10 @@ export function PosPage() {
             {/* Generate new pairing code button */}
             <button
               type="button"
-              onClick={regenerateScannerSession}
+              onClick={() => {
+                setShowScannerCode(true);
+                regenerateScannerSession();
+              }}
               title={isEn ? 'Click to generate a new pairing code' : 'Bấm để tạo mã mới'}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                 scannerStatus === 'connected'
@@ -1428,8 +1432,8 @@ export function PosPage() {
               }`}
             >
               {scannerStatus === 'connected' ? <Wifi className="w-3.5 h-3.5" /> : scannerStatus === 'connecting' ? <Wifi className="w-3.5 h-3.5" /> : <Scan className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline font-mono tracking-wider">
-                {scannerCode || (isEn ? 'Generate Code' : 'Tạo mã')}
+              <span className={`hidden sm:inline ${showScannerCode && scannerCode ? 'font-mono tracking-wider' : ''}`}>
+                {showScannerCode && scannerCode ? scannerCode : (isEn ? 'Generate Code' : 'Tạo mã')}
               </span>
             </button>
 
