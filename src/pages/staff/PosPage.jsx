@@ -315,6 +315,12 @@ export function PosPage() {
 
 
   // ── Scanner state ──────────────────────────────────────────────
+  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272?channel-name=production';
+  const EXPO_LOCAL_URL =
+    typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      ? `exp://${window.location.hostname}:8081`
+      : 'exp://192.168.102.4:8081';
+
   const [scannerOpen, setScannerOpen] = useState(false);
   const [expoQrOpen, setExpoQrOpen] = useState(false);
   const [expoMetroUrl, setExpoMetroUrl] = useState(() => {
@@ -322,13 +328,7 @@ export function PosPage() {
       const saved = localStorage.getItem('stockpilot_expo_metro_url');
       if (saved) return saved;
     } catch (_) {}
-    if (typeof window !== 'undefined' && window.location) {
-      const host = window.location.hostname;
-      if (host && host !== 'localhost' && host !== '127.0.0.1') {
-        return `exp://${host}:8081`;
-      }
-    }
-    return 'exp://192.168.102.4:8081';
+    return EXPO_CLOUD_URL;
   });
   const [scannerCode, setScannerCode] = useState(() => {
     try {
@@ -2310,7 +2310,7 @@ export function PosPage() {
             </div>
 
             <div className="border-2 border-blue-100 rounded-2xl p-4 bg-slate-50/50 flex flex-col items-center gap-3">
-              <PairingQrSvg value={expoMetroUrl.trim() || 'exp://192.168.102.4:8081'} size={200} />
+              <PairingQrSvg value={expoMetroUrl.trim() || EXPO_CLOUD_URL} size={200} />
               <p className="text-[11px] font-medium text-slate-500 text-center">
                 {isEn
                   ? 'Point your iPhone Camera or Expo Go scanner at this QR code.'
@@ -2318,10 +2318,42 @@ export function PosPage() {
               </p>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold text-slate-600">
-                {isEn ? 'Metro URL (Expo Go)' : 'Địa chỉ Metro (Expo Go)'}
-              </label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className="block text-[11px] font-semibold text-slate-600">
+                  {isEn ? 'Expo Go URL' : 'Địa chỉ mở Expo Go'}
+                </label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExpoMetroUrl(EXPO_CLOUD_URL);
+                      try { localStorage.setItem('stockpilot_expo_metro_url', EXPO_CLOUD_URL); } catch (_) {}
+                    }}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer ${
+                      expoMetroUrl === EXPO_CLOUD_URL
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    Expo Cloud (24/7)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExpoMetroUrl(EXPO_LOCAL_URL);
+                      try { localStorage.setItem('stockpilot_expo_metro_url', EXPO_LOCAL_URL); } catch (_) {}
+                    }}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer ${
+                      expoMetroUrl === EXPO_LOCAL_URL
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    Local
+                  </button>
+                </div>
+              </div>
               <div className="flex items-center gap-1.5">
                 <input
                   type="text"
@@ -2331,7 +2363,7 @@ export function PosPage() {
                     setExpoMetroUrl(next);
                     try { localStorage.setItem('stockpilot_expo_metro_url', next); } catch (_) {}
                   }}
-                  placeholder="exp://192.168.102.4:8081"
+                  placeholder={EXPO_CLOUD_URL}
                   className="flex-1 px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:border-blue-400"
                 />
                 <button
@@ -2344,9 +2376,13 @@ export function PosPage() {
                 </button>
               </div>
               <p className="text-[11px] text-slate-400">
-                {isEn
-                  ? 'Make sure `npx expo start` is running and phone is on the same Wi-Fi.'
-                  : 'Đảm bảo đã chạy `npx expo start` ở App mobile và điện thoại cùng Wi-Fi.'}
+                {expoMetroUrl.includes('u.expo.dev')
+                  ? (isEn
+                      ? 'Runs directly from Expo Cloud 24/7 — works on VPS without local Metro.'
+                      : 'Chạy trực tiếp từ Expo Cloud 24/7 — dùng được ngay trên VPS mà không cần bật máy tính.')
+                  : (isEn
+                      ? 'Make sure `npx expo start` is running and phone is on the same Wi-Fi.'
+                      : 'Đảm bảo đã chạy `npx expo start` ở App mobile và điện thoại cùng Wi-Fi.')}
               </p>
             </div>
           </div>
