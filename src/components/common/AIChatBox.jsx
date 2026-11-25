@@ -192,7 +192,7 @@ export function AIChatBox() {
     stopListening,
     speak,
     stopSpeaking,
-  } = useVoiceAssistant();
+  } = useVoiceAssistant({ language });
 
   const [voiceInterimText, setVoiceInterimText] = useState('');
 

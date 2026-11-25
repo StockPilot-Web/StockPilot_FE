@@ -111,9 +111,10 @@ export async function apiChatWithAssistant(question, stockItemId = null) {
   return data.data;
 }
 
-export async function apiTranscribeAudio(audioBlob) {
+export async function apiTranscribeAudio(audioBlob, language = 'vi') {
   const formData = new FormData();
   formData.append('audio', audioBlob, 'recording.webm');
+  formData.append('language', language === 'en' ? 'en' : 'vi');
   const { data } = await apiClient.post('/assistant/transcribe', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });

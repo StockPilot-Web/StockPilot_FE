@@ -201,6 +201,7 @@ export function PosPage() {
   const [payosCountdown, setPayosCountdown] = useState(900);
   const [copiedField, setCopiedField] = useState(null);
   const payosPollRef = useRef(null);
+  const payosPollInFlightRef = useRef(false);
   const payosTimerRef = useRef(null);
 
   // ── MoMo E-Wallet Payment State ────────────────────────────────
@@ -211,13 +212,14 @@ export function PosPage() {
   const [momoQrTab, setMomoQrTab] = useState('p2p'); // 'p2p' | 'vietqr' | 'gateway'
   const [isMomoSimulating, setIsMomoSimulating] = useState(false);
   const momoPollRef = useRef(null);
+  const momoPollInFlightRef = useRef(false);
   const momoTimerRef = useRef(null);
 
   // ── MoMo Real Account Config State ─────────────────────────────
   const [momoConfigModalOpen, setMomoConfigModalOpen] = useState(false);
   const [momoConfig, setMomoConfig] = useState(null);
-  const [momoPartnerCodeInput, setMomoPartnerCodeInput] = useState('MOMOVA0I20261015');
-  const [momoAccessKeyInput, setMomoAccessKeyInput] = useState('sjqZwImFcjxZBhHF');
+  const [momoPartnerCodeInput, setMomoPartnerCodeInput] = useState('');
+  const [momoAccessKeyInput, setMomoAccessKeyInput] = useState('');
   const [momoSecretKeyInput, setMomoSecretKeyInput] = useState('');
   const [momoBusinessNameInput, setMomoBusinessNameInput] = useState('STOCKPILOT');
   const [isSavingMomoConfig, setIsSavingMomoConfig] = useState(false);
@@ -227,8 +229,8 @@ export function PosPage() {
       const cfg = await apiGetMomoConfig();
       if (cfg) {
         setMomoConfig(cfg);
-        setMomoPartnerCodeInput(cfg.partnerCode || 'MOMOVA0I20261015');
-        setMomoAccessKeyInput(cfg.accessKey || 'sjqZwImFcjxZBhHF');
+        setMomoPartnerCodeInput(cfg.partnerCode || '');
+        setMomoAccessKeyInput(cfg.accessKey || '');
         setMomoSecretKeyInput(''); // Không tải khóa bí mật ra client
         setMomoBusinessNameInput(cfg.businessName || 'STOCKPILOT');
       }
@@ -835,6 +837,7 @@ export function PosPage() {
       clearInterval(payosTimerRef.current);
       payosTimerRef.current = null;
     }
+    payosPollInFlightRef.current = false;
   }, []);
 
   const stopMomoPolling = useCallback(() => {
@@ -846,6 +849,7 @@ export function PosPage() {
       clearInterval(momoTimerRef.current);
       momoTimerRef.current = null;
     }
+    momoPollInFlightRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -1028,8 +1032,11 @@ export function PosPage() {
           });
         }, 1000);
 
-        // 2. Polling kiểm tra trạng thái thanh toán từ MoMo mỗi 2.5 giây
+        // 2. Polling kiểm tra trạng thái thanh toán từ MoMo mỗi 2.5 giây.
+        // Không gọi khi tab ẩn và không để request chồng lên nhau.
         momoPollRef.current = setInterval(async () => {
+          if (document.visibilityState !== 'visible' || momoPollInFlightRef.current) return;
+          momoPollInFlightRef.current = true;
           try {
             const checkRes = await apiCheckMomoStatus(res.momoOrderId);
             if (checkRes?.isPaid) {
@@ -1072,6 +1079,8 @@ export function PosPage() {
             }
           } catch (pollErr) {
             console.warn('Lỗi kiểm tra MoMo:', pollErr);
+          } finally {
+            momoPollInFlightRef.current = false;
           }
         }, 2500);
       } catch (err) {
@@ -1126,8 +1135,11 @@ export function PosPage() {
           });
         }, 1000);
 
-        // 2. Tự động kiểm tra trạng thái chuyển khoản từ PayOS mỗi 2.5 giây
+        // 2. Tự động kiểm tra trạng thái chuyển khoản từ PayOS mỗi 2.5 giây.
+        // Không gọi khi tab ẩn và không để request chồng lên nhau.
         payosPollRef.current = setInterval(async () => {
+          if (document.visibilityState !== 'visible' || payosPollInFlightRef.current) return;
+          payosPollInFlightRef.current = true;
           try {
             const checkRes = await apiCheckPayosStatus(res.orderCode);
             if (checkRes?.isPaid) {
@@ -1170,6 +1182,8 @@ export function PosPage() {
             }
           } catch (pollErr) {
             console.warn('Lỗi kiểm tra PayOS:', pollErr);
+          } finally {
+            payosPollInFlightRef.current = false;
           }
         }, 2500);
       } catch (err) {

@@ -123,12 +123,14 @@ export function Topbar() {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
   const notifRef = useRef(null);
   const userRef = useRef(null);
+  const notificationRequestRef = useRef(false);
 
   const currentRole = normalizeRole(user?.role);
 
   // Fetch notifications từ API thật (bảng notifications trong MySQL) - Chỉ áp dụng cho người dùng thuộc Store
   const fetchRealNotifications = async () => {
-    if (!user || currentRole === 'admin') return;
+    if (!user || currentRole === 'admin' || document.visibilityState !== 'visible' || notificationRequestRef.current) return;
+    notificationRequestRef.current = true;
     try {
       const data = await apiGetNotifications({ page: 1, limit: 30 });
       const items = Array.isArray(data) ? data : (data.items || data.data || []);
@@ -145,15 +147,24 @@ export function Topbar() {
       setNotifications(mapped);
     } catch (err) {
       console.error('Failed to load notifications:', err);
+    } finally {
+      notificationRequestRef.current = false;
     }
   };
 
   useEffect(() => {
     if (currentRole === 'admin') return;
     fetchRealNotifications();
-    // Live polling mỗi 12 giây để bắt đơn hàng mới hoặc cảnh báo kho thời gian thực
+    // Chỉ polling khi tab đang hiển thị; không chồng request nếu API phản hồi chậm.
     const interval = setInterval(fetchRealNotifications, 12000);
-    return () => clearInterval(interval);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchRealNotifications();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [user, currentRole]);
 
   useEffect(() => {
