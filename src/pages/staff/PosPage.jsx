@@ -335,9 +335,10 @@ export function PosPage() {
     } catch (_) {}
     return isLocalWebHost ? EXPO_LOCAL_URL : EXPO_CLOUD_URL;
   });
+  const scannerStorageKey = user?.id ? `stockpilot_pos_scanner_code_${user.id}` : 'stockpilot_pos_scanner_code';
   const [scannerCode, setScannerCode] = useState(() => {
     try {
-      return localStorage.getItem('stockpilot_pos_scanner_code') || null;
+      return localStorage.getItem(scannerStorageKey) || null;
     } catch (_) {
       return null;
     }
@@ -455,7 +456,7 @@ export function PosPage() {
       if (!res.ok) {
         if (res.status === 404) {
           // Session doesn't exist anymore on server
-          try { localStorage.removeItem('stockpilot_pos_scanner_code'); } catch (_) {}
+          try { localStorage.removeItem(scannerStorageKey); } catch (_) {}
           setScannerCode(null);
           setScannerStatus('idle');
           return;
@@ -463,7 +464,7 @@ export function PosPage() {
         setScannerStatus('error');
         // Schedule auto-reconnect
         reconnectTimeoutRef.current = setTimeout(() => {
-          const currentSaved = localStorage.getItem('stockpilot_pos_scanner_code');
+          const currentSaved = localStorage.getItem(scannerStorageKey);
           if (currentSaved) openSseStream(currentSaved);
         }, 5000);
         return;
@@ -493,7 +494,7 @@ export function PosPage() {
               setLastScan(payload);
               toast({ title: `✓ Quét: ${payload.name}`, description: `${payload.sku} — ${Number(payload.sellingPrice).toLocaleString('vi-VN')} đ`, type: 'success' });
             } else if (eventName === 'expired' || eventName === 'closed') {
-              try { localStorage.removeItem('stockpilot_pos_scanner_code'); } catch (_) {}
+              try { localStorage.removeItem(scannerStorageKey); } catch (_) {}
               setScannerStatus('idle');
               setScannerCode(null);
             }
@@ -502,7 +503,7 @@ export function PosPage() {
       }
 
       // If disconnected without error and session code still saved, reconnect
-      const savedCode = localStorage.getItem('stockpilot_pos_scanner_code');
+      const savedCode = localStorage.getItem(scannerStorageKey);
       if (savedCode && !ctrl.signal.aborted) {
         setScannerStatus('connecting');
         reconnectTimeoutRef.current = setTimeout(() => {
@@ -514,7 +515,7 @@ export function PosPage() {
     }).catch((err) => {
       if (err.name !== 'AbortError') {
         setScannerStatus('error');
-        const savedCode = localStorage.getItem('stockpilot_pos_scanner_code');
+        const savedCode = localStorage.getItem(scannerStorageKey);
         if (savedCode) {
           reconnectTimeoutRef.current = setTimeout(() => {
             openSseStream(savedCode);
@@ -522,7 +523,7 @@ export function PosPage() {
         }
       }
     });
-  }, [addScannedItemToCart]);
+  }, [addScannedItemToCart, scannerStorageKey]);
 
   // Create a pairing session and open SSE stream
   const startScannerSession = async () => {
@@ -531,7 +532,7 @@ export function PosPage() {
       const { data } = await apiClient.post('/scanner/sessions', { label: 'POS Web' });
       const code = data.data.code;
       setScannerCode(code);
-      try { localStorage.setItem('stockpilot_pos_scanner_code', code); } catch (_) {}
+      try { localStorage.setItem(scannerStorageKey, code); } catch (_) {}
       openSseStream(code);
     } catch (err) {
       setScannerStatus('error');
@@ -551,19 +552,19 @@ export function PosPage() {
     if (scannerCode) {
       try { await apiClient.delete(`/scanner/sessions/${scannerCode}`); } catch (_) {}
     }
-    try { localStorage.removeItem('stockpilot_pos_scanner_code'); } catch (_) {}
+    try { localStorage.removeItem(scannerStorageKey); } catch (_) {}
     setScannerCode(null);
     setScannerStatus('idle');
     setLastScan(null);
   };
 
-  // Auto-restore / Auto-connect scanner session on mount
+  // Auto-restore / Auto-connect scanner session on mount or user change
   useEffect(() => {
     let isCancelled = false;
     const restoreSession = async () => {
       try {
-        const storedCode = localStorage.getItem('stockpilot_pos_scanner_code');
-        // Fetch active sessions from server for current store
+        const storedCode = localStorage.getItem(scannerStorageKey);
+        // Fetch active sessions from server for current user
         const res = await apiClient.get('/scanner/sessions');
         const sessions = res?.data?.data || [];
         if (isCancelled) return;
@@ -571,11 +572,14 @@ export function PosPage() {
         if (sessions.length > 0) {
           const activeCode = sessions[0].code;
           setScannerCode(activeCode);
-          try { localStorage.setItem('stockpilot_pos_scanner_code', activeCode); } catch (_) {}
+          try { localStorage.setItem(scannerStorageKey, activeCode); } catch (_) {}
           openSseStream(activeCode);
         } else if (storedCode) {
           setScannerCode(storedCode);
           openSseStream(storedCode);
+        } else {
+          setScannerCode(null);
+          setScannerStatus('idle');
         }
       } catch (err) {
         console.warn('Không thể tự động khôi phục scanner session:', err);
