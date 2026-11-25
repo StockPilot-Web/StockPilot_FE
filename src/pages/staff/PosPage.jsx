@@ -1409,7 +1409,9 @@ export function PosPage() {
               }`}
             >
               {scannerStatus === 'connected' ? <Wifi className="w-3.5 h-3.5" /> : scannerStatus === 'connecting' ? <Wifi className="w-3.5 h-3.5" /> : <Scan className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{isEn ? 'Generate Code' : 'Tạo mã'}</span>
+              <span className="hidden sm:inline font-mono tracking-wider">
+                {scannerCode || (isEn ? 'Generate Code' : 'Tạo mã')}
+              </span>
             </button>
 
             {/* Connect Expo App (Open in Expo Go QR) button */}
