@@ -47,7 +47,7 @@ function movTypeBadge(type, isEn = false) {
 }
 
 const CSS = `
-.inv-root { font-family:var(--font-ui); }
+.inv-root { width:100%; min-width:0; box-sizing:border-box; font-family:var(--font-ui); }
 .inv-header {
   background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
   border: 1px solid #7dd3fc; border-radius: 18px; padding: 18px 24px;
@@ -81,6 +81,9 @@ const CSS = `
 }
 .inv-btn-primary:hover { background:#fff; border-color:#38bdf8; color:#0369a1; transform:translateY(-1px); box-shadow:0 4px 12px rgba(2,132,199,.2); }
 .inv-kpi { background:#fff; border:1px solid #edf2f7; border-radius:18px; padding:18px 20px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:all .25s; }
+.inv-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+@media (max-width:900px) { .inv-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:640px) { .inv-kpi-grid { grid-template-columns:minmax(0,1fr); } }
 .inv-kpi:hover { box-shadow:0 8px 24px rgba(0,0,0,.07); transform:translateY(-2px); }
 .inv-kpi-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .inv-kpi-label { font-size:11px; color:#64748b; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
@@ -361,7 +364,7 @@ export function InventoryPage() {
       </div>
 
       {/* KPI (Phân quyền: Nhân viên ẩn thẻ Giá trị tồn kho) */}
-      <div style={{ display: 'grid', gridTemplateColumns: canSeeCost ? 'repeat(4,1fr)' : 'repeat(3,1fr)', gap: 14 }}>
+      <div className="inv-kpi-grid">
         {canSeeCost && (
           <div className="inv-kpi">
             <div className="inv-kpi-icon" style={{ background: '#eff6ff', color: '#2563eb' }}><DollarSign style={{ width: 22, height: 22 }} /></div>

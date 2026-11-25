@@ -1275,7 +1275,7 @@ export function PosPage() {
 
 
   return (
-    <div className="flex flex-col lg:flex-row gap-3 h-[calc(100vh-5rem)] max-w-[1760px] mx-auto overflow-hidden">
+    <div className="w-full min-w-0 flex flex-col lg:flex-row gap-3 h-[calc(100vh-5rem)] max-w-[1760px] mx-auto overflow-hidden">
 
       {/* ─── LEFT COLUMN: CART (60%) ─── */}
       <div
@@ -1575,7 +1575,7 @@ export function PosPage() {
 
       {/* ─── RIGHT COLUMN: CATALOG + CHECKOUT (45%) ─── */}
       <div
-        className="w-full lg:w-[580px] xl:w-[660px] 2xl:w-[740px] flex flex-col overflow-hidden shrink-0 rounded-2xl border border-white/80"
+        className="w-full min-w-0 lg:w-[580px] xl:w-[660px] 2xl:w-[740px] flex flex-col overflow-hidden shrink-0 rounded-2xl border border-white/80"
         style={{ background: '#fff', boxShadow: '0 2px 12px rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.04)' }}
       >
         {/* Product Search */}

@@ -664,6 +664,18 @@ export function AlertsPage() {
           overflow: hidden;
           box-shadow: 0 8px 22px -5px rgba(14, 165, 233, 0.22), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
         }
+        @media (max-width: 768px) {
+          .alerts-hero-header {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 14px;
+            padding: 16px;
+          }
+          .alerts-btn-refresh {
+            justify-content: center;
+            width: 100%;
+          }
+        }
         .alerts-hero-header::before {
           content: '';
           position: absolute;
@@ -809,8 +821,8 @@ export function AlertsPage() {
       </div>
 
       {/* TABS + SEARCH */}
-      <div className="flex flex-row items-center justify-between gap-3 border-b border-border pb-4 overflow-x-auto">
-        <div className="flex items-center gap-2 flex-nowrap shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-4">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           {[
             { key: 'ALL', label: isEn ? 'All' : 'Tất cả', count: alerts.length },
             { key: 'OPEN', label: isEn ? 'Pending' : 'Chưa xử lý', count: openCount },
@@ -853,7 +865,7 @@ export function AlertsPage() {
             </button>
           ))}
         </div>
-        <div style={{ position: 'relative' }} className="w-64 sm:w-72 shrink-0">
+        <div style={{ position: 'relative' }} className="w-full sm:w-64 lg:w-72 shrink-0">
           <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 15, height: 15, color: '#64748b' }} />
           <input
             type="text"
