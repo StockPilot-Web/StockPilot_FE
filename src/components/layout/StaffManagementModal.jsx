@@ -8,13 +8,14 @@ import {
 import { apiGetStaffList, apiCreateStaff, apiUpdateStaff, apiDeleteStaff } from '../../services/staffService';
 import { useToast } from '../common/Toast';
 import { cn } from '../lib/utils';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 export function StaffManagementModal({ isOpen, onClose, isEn }) {
   const { toast } = useToast();
 
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { draft: searchDraft, query: searchQuery, setDraft: setSearchDraft, apply: applySearch, clear: clearSearch } = useEnterSearch();
 
   // Selected staff for Left Panel
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -713,14 +714,15 @@ export function StaffManagementModal({ isOpen, onClose, isEn }) {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchDraft}
+                  onChange={(e) => setSearchDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
                   placeholder={isEn ? 'Search staff by name or email...' : 'Tìm nhân viên theo tên hoặc email...'}
                   className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 font-medium"
                 />
-                {searchQuery && (
+                {searchDraft && (
                   <button
-                    onClick={() => setSearchQuery('')}
+                    onClick={clearSearch}
                     className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
                   >
                     <X className="w-3.5 h-3.5" />

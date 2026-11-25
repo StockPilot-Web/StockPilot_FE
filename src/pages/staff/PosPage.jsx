@@ -12,6 +12,7 @@ import { useAuthStore } from '../../components/store/authStore';
 import { isOwner } from '../../config/permissions.config';
 import { useTranslation } from '../../i18n/useTranslation';
 import { formatCategoryName } from '../../components/store/productStore';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 import {
   apiGetPosProducts,
   apiCreatePosSale,
@@ -154,7 +155,7 @@ export function PosPage() {
   const searchInputRef = useRef(null);
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [searchProduct, setSearchProduct] = useState('');
+  const { draft: searchDraft, query: searchProduct, setDraft: setSearchDraft, apply: applySearch, clear: clearSearch } = useEnterSearch();
   const [selectedCategory, setSelectedCategory] = useState('ALL');
 
   const [tabs, setTabs] = useState([
@@ -1586,13 +1587,14 @@ export function PosPage() {
               ref={searchInputRef}
               type="text"
               placeholder={t('searchProductPlaceholder', 'Tìm hàng hóa theo tên, mã SP, barcode (F3)...')}
-              value={searchProduct}
-              onChange={(e) => setSearchProduct(e.target.value)}
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
               className="w-full pl-8 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
-            {searchProduct && (
+            {searchDraft && (
               <button
-                onClick={() => setSearchProduct('')}
+                onClick={clearSearch}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />

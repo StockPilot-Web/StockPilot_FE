@@ -45,7 +45,6 @@ import {
   ConfirmDialog,
   DetailList,
   LiveIndicator,
-  useDebounced,
 } from './components/AdminUI';
 import { useAdminText } from './useAdminText';
 
@@ -303,7 +302,6 @@ export function AdminSupportPage() {
   const page = Number(params.get('page')) || 1;
   const selectedId = Number(params.get('ticket')) || null;
   const [search, setSearch] = useState(params.get('q') || '');
-  const debouncedSearch = useDebounced(search);
 
   const [tickets, setTickets] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -326,10 +324,6 @@ export function AdminSupportPage() {
     if (resetPage) next.delete('page');
     setParams(next, { replace: true });
   };
-
-  useEffect(() => {
-    if ((params.get('q') || '') !== debouncedSearch) updateParams({ q: debouncedSearch });
-  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const query = params.get('q') || '';
   const loadList = useCallback(

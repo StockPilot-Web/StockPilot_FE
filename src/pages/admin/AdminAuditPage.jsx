@@ -46,7 +46,6 @@ import {
   Pagination,
   Badge,
   Avatar,
-  useDebounced,
 } from './components/AdminUI';
 import { useAdminText } from './useAdminText';
 
@@ -274,7 +273,6 @@ export function AdminAuditPage() {
   const limit = Number(params.get('limit')) || 50;
 
   const [search, setSearch] = useState(params.get('q') || '');
-  const debouncedSearch = useDebounced(search);
 
   const [logs, setLogs] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -291,10 +289,6 @@ export function AdminAuditPage() {
     if (resetPage) next.delete('page');
     setParams(next, { replace: true });
   };
-
-  useEffect(() => {
-    if ((params.get('q') || '') !== debouncedSearch) updateParams({ q: debouncedSearch });
-  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     apiListAdminStores({ limit: 100 })

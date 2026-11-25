@@ -11,6 +11,7 @@ import { useToast } from '../../components/common/Toast';
 import { useTranslation } from '../../i18n/useTranslation';
 import { useAuthStore } from '../../components/store/authStore';
 import { canResolveAlerts, canRunDecisionEngine, canUseAiAssistant } from '../../config/permissions.config';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 /* ═══ HELPERS ════════════════════════════════════════════════════ */
 const TYPE_META = {
@@ -511,7 +512,7 @@ export function AlertsPage() {
   const [activeTab, setActiveTab] = useState('ALL');
   const [selType, setSelType] = useState('ALL');
   const [selSev, setSelSev] = useState('ALL');
-  const [search, setSearch] = useState('');
+  const { draft: searchDraft, query: search, setDraft: setSearchDraft, apply: applySearch, clear: clearSearch } = useEnterSearch();
   const [modalAlert, setModalAlert] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -609,7 +610,7 @@ export function AlertsPage() {
     });
   }, [navigate, isEn]);
 
-  const clearFilters = () => { setSelType('ALL'); setSelSev('ALL'); setSearch(''); };
+  const clearFilters = () => { setSelType('ALL'); setSelSev('ALL'); clearSearch(); };
 
   const TYPE_TABS = [
     { key: 'ALL', label: isEn ? 'All' : 'Tất cả' },
@@ -870,13 +871,14 @@ export function AlertsPage() {
           <input
             type="text"
             placeholder={isEn ? "Search product, SKU, risk type..." : "Tìm kiếm tên SP, mã SP, loại rủi ro..."}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={searchDraft}
+            onChange={e => setSearchDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
             style={{ width: '100%', paddingLeft: 34, paddingRight: 32, paddingTop: 8, paddingBottom: 8, fontSize: 13, borderRadius: 12, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
           />
-          {search && (
+          {searchDraft && (
             <button
-              onClick={() => setSearch('')}
+              onClick={clearSearch}
               style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }}
             >
               <X style={{ width: 14, height: 14 }} />

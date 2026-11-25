@@ -25,6 +25,7 @@ import { apiCreateReturn } from '../../services/inventoryService';
 import { useProductStore } from '../../components/store/productStore';
 
 import { useToast } from '../../components/common/Toast';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 import { useAuthStore } from '../../store/authStore';
 
@@ -314,7 +315,7 @@ export function OrdersPage() {
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('ALL'); // ALL | CASH | BANK_TRANSFER | PAYOS
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const { draft: searchDraft, query: searchQuery, setDraft: setSearchDraft, apply: applySearch, clear: clearSearch } = useEnterSearch();
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -2428,19 +2429,20 @@ export function OrdersPage() {
 
               placeholder={isEn ? "Search order code, staff, customer, total, cancel, return..." : "Tìm mã đơn, nhân viên, khách, tổng tiền, hủy, trả..."}
 
-              value={searchQuery}
+              value={searchDraft}
 
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
 
               className="w-full pl-9 pr-9 py-2 text-xs bg-white border border-slate-200/90 rounded-xl shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 font-medium placeholder:text-slate-400 transition-all"
 
             />
 
-            {searchQuery && (
+            {searchDraft && (
 
               <button
 
-                onClick={() => setSearchQuery('')}
+                onClick={clearSearch}
 
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-md"
 
