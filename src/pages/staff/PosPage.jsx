@@ -1391,11 +1391,16 @@ export function PosPage() {
             </span>
 
 
-            {/* Scanner connect button */}
+            {/* Generate pairing code button */}
             <button
-              onClick={() => setScannerOpen(true)}
-              title={t('scannerPairingTitle', 'Kết nối máy quét mã vạch')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+              onClick={() => {
+                setScannerOpen(true);
+                if (!scannerCode && (scannerStatus === 'idle' || scannerStatus === 'error')) {
+                  startScannerSession();
+                }
+              }}
+              title={isEn ? 'Generate pairing code for mobile scanner' : 'Tạo mã ghép nối cho app điện thoại'}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                 scannerStatus === 'connected'
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                   : scannerStatus === 'connecting'
@@ -1404,7 +1409,7 @@ export function PosPage() {
               }`}
             >
               {scannerStatus === 'connected' ? <Wifi className="w-3.5 h-3.5" /> : scannerStatus === 'connecting' ? <Wifi className="w-3.5 h-3.5" /> : <Scan className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{scannerStatus === 'connected' ? t('scanner', 'Scanner') : t('scannerIdle', 'Quét mã')}</span>
+              <span className="hidden sm:inline">{isEn ? 'Generate Code' : 'Tạo mã'}</span>
             </button>
 
             {/* Connect Expo App (Open in Expo Go QR) button */}
