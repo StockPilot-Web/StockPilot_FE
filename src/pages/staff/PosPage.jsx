@@ -318,7 +318,7 @@ export function PosPage() {
 
 
   // ── Scanner state ──────────────────────────────────────────────
-  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/6e99e6e6-e918-4053-ae62-ef339f0293ba';
+  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/80620358-4eab-4a05-8581-9f89d4bea9aa';
   const isLocalWebHost =
     typeof window !== 'undefined' &&
     window.location &&
@@ -341,7 +341,8 @@ export function PosPage() {
         !saved.includes('f2ae5d90-239f-45e3-8a72-0a1f8a2d9242') &&
         !saved.includes('e00500ee-9772-44d6-a7a4-c34e10b178e0') &&
         !saved.includes('8f45a61c-8413-47a4-bb6f-e6099e88ddca') &&
-        !saved.includes('15009017-f185-4838-bb6a-afe6d427fd1a')
+        !saved.includes('15009017-f185-4838-bb6a-afe6d427fd1a') &&
+        !saved.includes('6e99e6e6-e918-4053-ae62-ef339f0293ba')
       ) {
         return saved;
       }
@@ -2280,74 +2281,6 @@ export function PosPage() {
                 {isEn
                   ? 'Point your iPhone Camera or Expo Go scanner at this QR code.'
                   : 'Dùng Camera iPhone hoặc ứng dụng Expo Go quét mã QR này.'}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <label className="block text-[11px] font-semibold text-slate-600">
-                  {isEn ? 'Expo Go URL' : 'Địa chỉ mở Expo Go'}
-                </label>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setExpoMetroUrl(EXPO_CLOUD_URL);
-                      try { localStorage.setItem(EXPO_STORAGE_KEY, EXPO_CLOUD_URL); } catch (_) {}
-                    }}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer ${
-                      expoMetroUrl === EXPO_CLOUD_URL
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    Expo Cloud (24/7)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setExpoMetroUrl(EXPO_LOCAL_URL);
-                      try { localStorage.setItem(EXPO_STORAGE_KEY, EXPO_LOCAL_URL); } catch (_) {}
-                    }}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer ${
-                      expoMetroUrl === EXPO_LOCAL_URL
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    Local
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="text"
-                  value={expoMetroUrl}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setExpoMetroUrl(next);
-                    try { localStorage.setItem(EXPO_STORAGE_KEY, next); } catch (_) {}
-                  }}
-                  placeholder={EXPO_CLOUD_URL}
-                  className="flex-1 px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:border-blue-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleCopyText('expo_metro', expoMetroUrl)}
-                  title={isEn ? 'Copy URL' : 'Sao chép'}
-                  className="px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 cursor-pointer"
-                >
-                  {copiedField === 'expo_metro' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-400">
-                {expoMetroUrl.includes('u.expo.dev')
-                  ? (isEn
-                      ? 'Runs directly from Expo Cloud 24/7 — works on VPS without local Metro.'
-                      : 'Chạy trực tiếp từ Expo Cloud 24/7 — dùng được ngay trên VPS mà không cần bật máy tính.')
-                  : (isEn
-                      ? 'Make sure `npx expo start` is running and phone is on the same Wi-Fi.'
-                      : 'Đảm bảo đã chạy `npx expo start` ở App mobile và điện thoại cùng Wi-Fi.')}
               </p>
             </div>
           </div>
