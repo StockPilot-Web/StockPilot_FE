@@ -24,9 +24,46 @@ import {
   apiSaveMomoConfig
 } from '../../services/posService';
 import { apiClient } from '../../lib/apiClient';
+import { BrowserQRCodeSvgWriter } from '@zxing/library';
 import { docSoThanhChu } from '../../utils/numberToWordsVN';
 import { ReceiptPrintContent, ReceiptPrintPortal } from '../../components/pos/ReceiptPrintView';
 
+
+function buildPairingQrPayload(code) {
+  const baseUrl = apiClient.defaults?.baseURL || '';
+  if (baseUrl && !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1')) {
+    return JSON.stringify({ code, serverUrl: baseUrl });
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    const host = window.location.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return JSON.stringify({ code, serverUrl: `${window.location.protocol}//${host}:5000/api/v1` });
+    }
+  }
+  return JSON.stringify({ code });
+}
+
+function PairingQrSvg({ value, size = 160 }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !value) return;
+    el.innerHTML = '';
+    try {
+      const writer = new BrowserQRCodeSvgWriter();
+      const svg = writer.write(value, size, size);
+      svg.setAttribute('width', String(size));
+      svg.setAttribute('height', String(size));
+      svg.style.display = 'block';
+      el.appendChild(svg);
+    } catch (_) {
+      // Fallback handled cleanly if writer fails
+    }
+  }, [value, size]);
+
+  return <div ref={containerRef} className="inline-flex items-center justify-center bg-white p-2 rounded-xl border border-slate-200 shadow-xs" />;
+}
 
 function safeNum(val) {
   if (val === null || val === undefined) return 0;
@@ -1339,6 +1376,26 @@ export function PosPage() {
               {scannerStatus === 'connected' ? <Wifi className="w-3.5 h-3.5" /> : scannerStatus === 'connecting' ? <Wifi className="w-3.5 h-3.5" /> : <Scan className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">{scannerStatus === 'connected' ? t('scanner', 'Scanner') : t('scannerIdle', 'Quét mã')}</span>
             </button>
+
+            {/* Connect Expo App (QR) button */}
+            <button
+              type="button"
+              onClick={() => {
+                setScannerOpen(true);
+                if (!scannerCode && (scannerStatus === 'idle' || scannerStatus === 'error')) {
+                  startScannerSession();
+                }
+              }}
+              title={isEn ? 'Connect Expo Mobile App via QR Code' : 'Kết nối App Expo qua mã QR'}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                scannerStatus === 'connected'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                  : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+              }`}
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isEn ? 'Connect App' : 'Kết nối App'}</span>
+            </button>
           </div>
         </div>
 
@@ -2158,13 +2215,23 @@ export function PosPage() {
 
             {scannerCode ? (
               <div className="border-2 border-blue-100 rounded-xl p-4 text-center space-y-3">
-                <p className="text-xs text-slate-500 font-medium">{t('scannerPairCodeLabel', 'Mã ghép nối (nhập trên app điện thoại)')}</p>
-                <div className="flex items-center justify-center gap-2">
-                  {scannerCode.split('').map((ch, i) => (
-                    <span key={i} className="w-10 h-12 flex items-center justify-center bg-blue-600 text-white text-xl font-black rounded-lg shadow">
-                      {ch}
-                    </span>
-                  ))}
+                <div className="flex flex-col items-center gap-2">
+                  <PairingQrSvg value={buildPairingQrPayload(scannerCode)} size={156} />
+                  <p className="text-[11px] text-slate-500">
+                    {isEn
+                      ? 'Open StockPilot Expo app → Tap "Scan QR from Web POS"'
+                      : 'Mở app Expo → Chọn "Quét mã QR từ POS Web"'}
+                  </p>
+                </div>
+                <div className="pt-1 border-t border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium mb-2">{t('scannerPairCodeLabel', 'Hoặc nhập mã ghép nối trên app điện thoại')}</p>
+                  <div className="flex items-center justify-center gap-2">
+                    {scannerCode.split('').map((ch, i) => (
+                      <span key={i} className="w-9 h-11 flex items-center justify-center bg-blue-600 text-white text-lg font-black rounded-lg shadow">
+                        {ch}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 <p className="text-[11px] text-emerald-600 font-medium">{t('scannerAutoSaved', '✓ Mã tự động lưu — Chỉ reset khi đăng xuất')}</p>
               </div>
