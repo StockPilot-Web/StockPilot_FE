@@ -15,7 +15,7 @@ import { useStickToBottom } from '../../features/assistant/useStickToBottom';
 import { useTranslation } from '../../i18n/useTranslation';
 import { AISourceBadge } from '../../components/assistant/AISourceBadge';
 import { AISuggestionsPanel } from '../../components/assistant/AISuggestionsPanel';
-import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
+import { detectSpeechLanguage, useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { StockPilotAILogo } from '../../components/common/StockPilotAILogo';
 
 function parseInlineMarkdown(text) {
@@ -317,7 +317,7 @@ export function AIAssistantPage() {
     stopListening,
     speak,
     stopSpeaking,
-  } = useVoiceAssistant();
+  } = useVoiceAssistant({ language });
 
   const handleToggleVoice = () => {
     if (isListening) {
@@ -362,6 +362,7 @@ export function AIAssistantPage() {
         out.push({
           id: `${turn.id}-a`, sender: 'ai', text: turn.answer, timestamp,
           source: turn.source, fallbackReason: turn.fallbackReason, actionLinks: turn.actionLinks,
+          speechLanguage: detectSpeechLanguage(turn.question, language),
         });
       }
       return out;
@@ -398,9 +399,9 @@ export function AIAssistantPage() {
     if (autoSpeakEnabled) {
       lastSpokenTurnIdRef.current = lastTurn.id;
       shouldSpeakNextResponseRef.current = false; // Đã đọc xong câu trả lời này
-      speak(lastTurn.answer, `${lastTurn.id}-a`);
+      speak(lastTurn.answer, `${lastTurn.id}-a`, detectSpeechLanguage(lastTurn.question, language));
     }
-  }, [lastTurn, autoSpeakEnabled, speak]);
+  }, [lastTurn, autoSpeakEnabled, speak, language]);
   const { containerRef: feedRef, onScroll: onFeedScroll, scrollToBottom, stick, hasUnseen } = useStickToBottom({
     sessionKey: activeChatId,
     itemCount: messages.length,
@@ -930,7 +931,7 @@ export function AIAssistantPage() {
                           {voiceSupported.tts && (
                             <button
                               type="button"
-                              onClick={() => speak(msg.text, msg.id)}
+                              onClick={() => speak(msg.text, msg.id, msg.speechLanguage)}
                               className={`flex items-center gap-1 transition-colors ml-2 cursor-pointer ${
                                 isSpeaking && speakingMessageId === msg.id
                                   ? 'text-blue-600 font-bold animate-pulse'
