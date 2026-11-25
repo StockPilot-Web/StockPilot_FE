@@ -404,7 +404,7 @@ export function ProductionDashboard() {
   }
 
   return (
-    <div className="dashboard-page-scoped w-full space-y-6 pb-12 animate-in fade-in duration-300">
+    <div className="dashboard-page-scoped w-full min-w-0 max-w-[1520px] mx-auto space-y-6 pb-12 animate-in fade-in duration-300">
       <style>{`
         .dashboard-page-scoped {
           --ifm-color-primary: #2563eb;

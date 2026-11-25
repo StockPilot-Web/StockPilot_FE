@@ -61,20 +61,21 @@ export function cleanMarkdownForSpeech(text) {
 }
 
 /**
- * Finds the best Vietnamese voice available in the browser
+ * Finds the best voice for the requested language available in the browser.
  */
-function getBestViVoice() {
+function getBestVoice(language = 'vi') {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null;
   const voices = window.speechSynthesis.getVoices();
+  const prefix = language === 'en' ? 'en' : 'vi';
   return (
-    voices.find((v) => v.lang === 'vi-VN' || v.lang === 'vi_VN') ||
-    voices.find((v) => v.lang.startsWith('vi')) ||
-    voices.find((v) => v.name.toLowerCase().includes('vietnam') || v.name.toLowerCase().includes('vietnamese')) ||
+    voices.find((v) => v.lang.toLowerCase() === (language === 'en' ? 'en-us' : 'vi-vn')) ||
+    voices.find((v) => v.lang.toLowerCase().startsWith(prefix)) ||
+    (language === 'vi' ? voices.find((v) => v.name.toLowerCase().includes('vietnam')) : null) ||
     null
   );
 }
 
-export function useVoiceAssistant() {
+export function useVoiceAssistant({ language = 'vi' } = {}) {
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -107,7 +108,7 @@ export function useVoiceAssistant() {
     setVoiceSupported({ stt: hasSTT, tts: hasTTS });
 
     const updateVoices = () => {
-      currentVoiceRef.current = getBestViVoice();
+      currentVoiceRef.current = getBestVoice(language);
     };
 
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -129,7 +130,7 @@ export function useVoiceAssistant() {
         try { window.speechSynthesis.cancel(); } catch (_) {}
       }
     };
-  }, []);
+  }, [language]);
 
   // ─── 0. Đảm bảo mỗi lượt nói chỉ gửi duy nhất 1 lần (Chống duplicate Web Speech vs Groq Whisper) ───
   const submitTextOnce = useCallback((text) => {
@@ -230,7 +231,7 @@ export function useVoiceAssistant() {
 
           if (audioBlob.size > 2000) {
             // Gửi sang backend -> Groq Whisper API với model whisper-large-v3
-            const whisperText = await apiTranscribeAudio(audioBlob);
+            const whisperText = await apiTranscribeAudio(audioBlob, language);
             const normalizedWhisper = normalizeVietnameseSpeechText(whisperText);
             if (normalizedWhisper && normalizedWhisper.trim()) {
               submitTextOnce(normalizedWhisper.trim());
@@ -326,7 +327,7 @@ export function useVoiceAssistant() {
           try { recognitionRef.current.abort(); } catch (_) {}
         }
         const recognition = new SpeechRecognition();
-        recognition.lang = 'vi-VN';
+        recognition.lang = language === 'en' ? 'en-US' : 'vi-VN';
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
@@ -379,7 +380,7 @@ export function useVoiceAssistant() {
         console.warn('SpeechRecognition start error:', recErr);
       }
     }
-  }, [stopListening]);
+  }, [language, stopListening]);
 
   // ─── 3. Text-To-Speech (Tự động phát giọng nói ngay khi AI trả lời) ───
   const speak = useCallback((rawText, messageId = null) => {
@@ -391,13 +392,13 @@ export function useVoiceAssistant() {
     if (!cleanText) return;
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'vi-VN';
-    utterance.rate = 1.05; // Tốc độ tự nhiên, rõ ràng
+    utterance.lang = language === 'en' ? 'en-US' : 'vi-VN';
+    utterance.rate = language === 'en' ? 0.98 : 1.05;
     utterance.pitch = 1.0;
 
-    const viVoice = currentVoiceRef.current || getBestViVoice();
-    if (viVoice) {
-      utterance.voice = viVoice;
+    const voice = currentVoiceRef.current || getBestVoice(language);
+    if (voice) {
+      utterance.voice = voice;
     }
 
     utterance.onstart = () => {
@@ -422,7 +423,7 @@ export function useVoiceAssistant() {
 
     activeUtteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [language]);
 
   const stopSpeaking = useCallback(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
