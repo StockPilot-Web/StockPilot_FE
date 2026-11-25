@@ -316,6 +316,20 @@ export function PosPage() {
 
   // ── Scanner state ──────────────────────────────────────────────
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [expoQrOpen, setExpoQrOpen] = useState(false);
+  const [expoMetroUrl, setExpoMetroUrl] = useState(() => {
+    try {
+      const saved = localStorage.getItem('stockpilot_expo_metro_url');
+      if (saved) return saved;
+    } catch (_) {}
+    if (typeof window !== 'undefined' && window.location) {
+      const host = window.location.hostname;
+      if (host && host !== 'localhost' && host !== '127.0.0.1') {
+        return `exp://${host}:8081`;
+      }
+    }
+    return 'exp://192.168.102.4:8081';
+  });
   const [scannerCode, setScannerCode] = useState(() => {
     try {
       return localStorage.getItem('stockpilot_pos_scanner_code') || null;
@@ -1377,21 +1391,12 @@ export function PosPage() {
               <span className="hidden sm:inline">{scannerStatus === 'connected' ? t('scanner', 'Scanner') : t('scannerIdle', 'Quét mã')}</span>
             </button>
 
-            {/* Connect Expo App (QR) button */}
+            {/* Connect Expo App (Open in Expo Go QR) button */}
             <button
               type="button"
-              onClick={() => {
-                setScannerOpen(true);
-                if (!scannerCode && (scannerStatus === 'idle' || scannerStatus === 'error')) {
-                  startScannerSession();
-                }
-              }}
-              title={isEn ? 'Connect Expo Mobile App via QR Code' : 'Kết nối App Expo qua mã QR'}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                scannerStatus === 'connected'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
-              }`}
+              onClick={() => setExpoQrOpen(true)}
+              title={isEn ? 'Open StockPilot App in Expo Go via QR Code' : 'Mở App trên Expo Go qua mã QR'}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
             >
               <QrCode className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{isEn ? 'Connect App' : 'Kết nối App'}</span>
@@ -2274,6 +2279,76 @@ export function PosPage() {
                 ? <>Mở app <strong>StockPilot Scanner</strong> trên điện thoại → Đăng nhập → Nhập mã → Quét mã vạch</>
                 : <>Open <strong>StockPilot Scanner</strong> app on phone → Log in → Enter code → Scan barcode</>}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Expo Go Launch QR Modal ─────────────────────────────── */}
+      {expoQrOpen && (
+        <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setExpoQrOpen(false)}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <Smartphone className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-slate-800 text-base">
+                    {isEn ? 'Open in Expo Go' : 'Mở App bằng Expo Go'}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {isEn ? 'Scan the QR code below with your phone' : 'Quét mã QR dưới đây để mở trên Expo Go'}
+                  </p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setExpoQrOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="border-2 border-blue-100 rounded-2xl p-4 bg-slate-50/50 flex flex-col items-center gap-3">
+              <PairingQrSvg value={expoMetroUrl.trim() || 'exp://192.168.102.4:8081'} size={200} />
+              <p className="text-[11px] font-medium text-slate-500 text-center">
+                {isEn
+                  ? 'Point your iPhone Camera or Expo Go scanner at this QR code.'
+                  : 'Dùng Camera iPhone hoặc ứng dụng Expo Go quét mã QR này.'}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-semibold text-slate-600">
+                {isEn ? 'Metro URL (Expo Go)' : 'Địa chỉ Metro (Expo Go)'}
+              </label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={expoMetroUrl}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setExpoMetroUrl(next);
+                    try { localStorage.setItem('stockpilot_expo_metro_url', next); } catch (_) {}
+                  }}
+                  placeholder="exp://192.168.102.4:8081"
+                  className="flex-1 px-3 py-2 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:border-blue-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleCopyText('expo_metro', expoMetroUrl)}
+                  title={isEn ? 'Copy URL' : 'Sao chép'}
+                  className="px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 cursor-pointer"
+                >
+                  {copiedField === 'expo_metro' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {isEn
+                  ? 'Make sure `npx expo start` is running and phone is on the same Wi-Fi.'
+                  : 'Đảm bảo đã chạy `npx expo start` ở App mobile và điện thoại cùng Wi-Fi.'}
+              </p>
+            </div>
           </div>
         </div>
       )}
