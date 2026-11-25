@@ -315,7 +315,7 @@ export function PosPage() {
 
 
   // ── Scanner state ──────────────────────────────────────────────
-  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/e00500ee-9772-44d6-a7a4-c34e10b178e0';
+  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/8f45a61c-8413-47a4-bb6f-e6099e88ddca';
   const isLocalWebHost =
     typeof window !== 'undefined' &&
     window.location &&
@@ -335,7 +335,8 @@ export function PosPage() {
         saved &&
         !saved.includes('?channel-name=production') &&
         !saved.includes('dbc6ffad-fc29-4354-98cc-65ac1f04cf7f') &&
-        !saved.includes('f2ae5d90-239f-45e3-8a72-0a1f8a2d9242')
+        !saved.includes('f2ae5d90-239f-45e3-8a72-0a1f8a2d9242') &&
+        !saved.includes('e00500ee-9772-44d6-a7a4-c34e10b178e0')
       ) {
         return saved;
       }
