@@ -580,8 +580,7 @@ export function PosPage() {
           setScannerCode(storedCode);
           openSseStream(storedCode);
         } else {
-          setScannerCode(null);
-          setScannerStatus('idle');
+          await startScannerSession();
         }
       } catch (err) {
         console.warn('Không thể tự động khôi phục scanner session:', err);
