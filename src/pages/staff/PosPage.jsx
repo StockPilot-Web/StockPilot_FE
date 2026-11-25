@@ -315,7 +315,7 @@ export function PosPage() {
 
 
   // ── Scanner state ──────────────────────────────────────────────
-  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/f2ae5d90-239f-45e3-8a72-0a1f8a2d9242';
+  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/e00500ee-9772-44d6-a7a4-c34e10b178e0';
   const isLocalWebHost =
     typeof window !== 'undefined' &&
     window.location &&
@@ -331,7 +331,12 @@ export function PosPage() {
   const [expoMetroUrl, setExpoMetroUrl] = useState(() => {
     try {
       const saved = localStorage.getItem(EXPO_STORAGE_KEY);
-      if (saved && !saved.includes('?channel-name=production') && !saved.includes('dbc6ffad-fc29-4354-98cc-65ac1f04cf7f')) {
+      if (
+        saved &&
+        !saved.includes('?channel-name=production') &&
+        !saved.includes('dbc6ffad-fc29-4354-98cc-65ac1f04cf7f') &&
+        !saved.includes('f2ae5d90-239f-45e3-8a72-0a1f8a2d9242')
+      ) {
         return saved;
       }
     } catch (_) {}
