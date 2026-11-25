@@ -1391,15 +1391,21 @@ export function PosPage() {
             </span>
 
 
-            {/* Generate pairing code button */}
+            {/* Generate / copy pairing code button */}
             <button
+              type="button"
               onClick={() => {
-                setScannerOpen(true);
-                if (!scannerCode && (scannerStatus === 'idle' || scannerStatus === 'error')) {
+                if (scannerCode) {
+                  handleCopyText('scanner_code', scannerCode);
+                  toast({
+                    title: isEn ? `Copied code: ${scannerCode}` : `Đã sao chép mã: ${scannerCode}`,
+                    type: 'success',
+                  });
+                } else {
                   startScannerSession();
                 }
               }}
-              title={isEn ? 'Generate pairing code for mobile scanner' : 'Tạo mã ghép nối cho app điện thoại'}
+              title={scannerCode ? (isEn ? 'Click to copy pairing code' : 'Bấm để sao chép mã') : (isEn ? 'Generate pairing code' : 'Tạo mã ghép nối')}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                 scannerStatus === 'connected'
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
@@ -2203,105 +2209,6 @@ export function PosPage() {
             </div>
 
             <ReceiptPrintContent data={printReceiptData} isPreview={true} />
-          </div>
-        </div>
-      )}
-
-      {/* ── Scanner Pairing Modal ──────────────────────────────── */}
-      {scannerOpen && (
-        <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setScannerOpen(false)}>
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-90 p-6 flex flex-col gap-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <Scan className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-slate-800 text-base">{t('scannerPairingTitle', 'StockPilot Scanner')}</h2>
-                  <p className="text-xs text-slate-500">{t('scannerPairingSub', 'Kết nối app điện thoại')}</p>
-                </div>
-              </div>
-              <button onClick={() => setScannerOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium ${
-              scannerStatus === 'connected' ? 'bg-emerald-50 text-emerald-700' :
-              scannerStatus === 'connecting' ? 'bg-amber-50 text-amber-700' :
-              scannerStatus === 'error' ? 'bg-red-50 text-red-600' :
-              'bg-slate-50 text-slate-500'
-            }`}>
-              {scannerStatus === 'connected' && <><Wifi className="w-4 h-4" /><span>{language === 'vi' ? 'Đã kết nối — đang chờ quét' : 'Connected — ready to scan'}</span></>}
-              {scannerStatus === 'connecting' && <><Wifi className="w-4 h-4 animate-pulse" /><span>{t('scannerScanning', 'Đang kết nối...')}</span></>}
-              {scannerStatus === 'error' && <><WifiOff className="w-4 h-4" /><span>{language === 'vi' ? 'Lỗi kết nối' : 'Connection Error'}</span></>}
-              {scannerStatus === 'idle' && <><Link2 className="w-4 h-4" /><span>{language === 'vi' ? 'Chưa kết nối' : 'Not Connected'}</span></>}
-            </div>
-
-            {scannerCode ? (
-              <div className="border-2 border-blue-100 rounded-xl p-4 text-center space-y-3">
-                <div className="flex flex-col items-center gap-2">
-                  <PairingQrSvg value={buildPairingQrPayload(scannerCode)} size={156} />
-                  <p className="text-[11px] text-slate-500">
-                    {isEn
-                      ? 'Open StockPilot Expo app → Tap "Scan QR from Web POS"'
-                      : 'Mở app Expo → Chọn "Quét mã QR từ POS Web"'}
-                  </p>
-                </div>
-                <div className="pt-1 border-t border-slate-100">
-                  <p className="text-xs text-slate-500 font-medium mb-2">{t('scannerPairCodeLabel', 'Hoặc nhập mã ghép nối trên app điện thoại')}</p>
-                  <div className="flex items-center justify-center gap-2">
-                    {scannerCode.split('').map((ch, i) => (
-                      <span key={i} className="w-9 h-11 flex items-center justify-center bg-blue-600 text-white text-lg font-black rounded-lg shadow">
-                        {ch}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <p className="text-[11px] text-emerald-600 font-medium">{t('scannerAutoSaved', '✓ Mã tự động lưu — Chỉ reset khi đăng xuất')}</p>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-400 text-sm">
-                {language === 'vi' ? 'Nhấn nút bên dưới để tạo mã ghép nối' : 'Click the button below to generate a pairing code'}
-              </div>
-            )}
-
-            {lastScan && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 text-sm">
-                <p className="text-xs text-emerald-600 font-semibold mb-0.5">{t('scannerRecentScan', 'Vừa quét:')}</p>
-                <p className="font-bold text-slate-800">{lastScan.name}</p>
-                <p className="text-xs text-slate-500">{lastScan.sku} — {Number(lastScan.sellingPrice).toLocaleString('vi-VN')} đ</p>
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              {(scannerStatus === 'idle' || scannerStatus === 'error') ? (
-                <button
-                  onClick={startScannerSession}
-                  className="flex-1 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
-                >
-                  <Scan className="w-4 h-4" />
-                  {t('scannerGenerateCode', 'Tạo mã ghép nối')}
-                </button>
-              ) : (
-                <button
-                  onClick={stopScannerSession}
-                  className="flex-1 py-2.5 bg-slate-100 text-slate-600 text-sm font-bold rounded-xl hover:bg-red-50 hover:text-red-600 transition-all flex items-center justify-center gap-2"
-                >
-                  <WifiOff className="w-4 h-4" />
-                  {t('scannerDisconnect', 'Ngắt kết nối')}
-                </button>
-              )}
-            </div>
-
-            <p className="text-[11px] text-slate-400 text-center">
-              {language === 'vi' 
-                ? <>Mở app <strong>StockPilot Scanner</strong> trên điện thoại → Đăng nhập → Nhập mã → Quét mã vạch</>
-                : <>Open <strong>StockPilot Scanner</strong> app on phone → Log in → Enter code → Scan barcode</>}
-            </p>
           </div>
         </div>
       )}
