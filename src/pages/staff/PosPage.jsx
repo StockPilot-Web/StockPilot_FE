@@ -534,7 +534,7 @@ export function PosPage() {
   }, [addScannedItemToCart, scannerStorageKey]);
 
   // Create a pairing session and open SSE stream
-  const startScannerSession = async () => {
+  const startScannerSession = async (showToast = false) => {
     setScannerStatus('connecting');
     try {
       const { data } = await apiClient.post('/scanner/sessions', { label: 'POS Web' });
@@ -542,10 +542,33 @@ export function PosPage() {
       setScannerCode(code);
       try { localStorage.setItem(scannerStorageKey, code); } catch (_) {}
       openSseStream(code);
+      if (showToast) {
+        toast({
+          title: isEn ? `New code generated: ${code}` : `Đã tạo mã mới: ${code}`,
+          type: 'success',
+        });
+      }
     } catch (err) {
       setScannerStatus('error');
       toast({ title: 'Không thể tạo phiên Scanner', description: err?.response?.data?.error?.message || err.message, type: 'error' });
     }
+  };
+
+  const regenerateScannerSession = async () => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    if (sseRef.current) {
+      try { sseRef.current.abort(); } catch (_) {}
+      sseRef.current = null;
+    }
+    if (scannerCode) {
+      try { await apiClient.delete(`/scanner/sessions/${scannerCode}`); } catch (_) {}
+    }
+    try { localStorage.removeItem(scannerStorageKey); } catch (_) {}
+    setScannerCode(null);
+    await startScannerSession(true);
   };
 
   const stopScannerSession = async () => {
@@ -1391,24 +1414,14 @@ export function PosPage() {
             </span>
 
 
-            {/* Generate / copy pairing code button */}
+            {/* Generate new pairing code button */}
             <button
               type="button"
-              onClick={() => {
-                if (scannerCode) {
-                  handleCopyText('scanner_code', scannerCode);
-                  toast({
-                    title: isEn ? `Copied code: ${scannerCode}` : `Đã sao chép mã: ${scannerCode}`,
-                    type: 'success',
-                  });
-                } else {
-                  startScannerSession();
-                }
-              }}
-              title={scannerCode ? (isEn ? 'Click to copy pairing code' : 'Bấm để sao chép mã') : (isEn ? 'Generate pairing code' : 'Tạo mã ghép nối')}
+              onClick={regenerateScannerSession}
+              title={isEn ? 'Click to generate a new pairing code' : 'Bấm để tạo mã mới'}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                 scannerStatus === 'connected'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
                   : scannerStatus === 'connecting'
                   ? 'bg-amber-50 text-amber-700 border-amber-300 animate-pulse'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
