@@ -18,6 +18,14 @@ export function normalizeVietnameseSpeechText(text) {
   return result;
 }
 
+export function detectSpeechLanguage(text, fallback = 'vi') {
+  const value = String(text || '').trim().toLowerCase();
+  if (!value) return fallback;
+  if (/[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i.test(value)) return 'vi';
+  const vietnameseWords = ['hàng', 'kho', 'tồn', 'bán', 'doanh', 'thu', 'lợi', 'nhuận', 'sản phẩm', 'cảnh báo'];
+  return vietnameseWords.some((word) => value.includes(word)) ? 'vi' : 'en';
+}
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { apiTranscribeAudio } from '../services/analyticsService';
 
@@ -61,20 +69,32 @@ export function cleanMarkdownForSpeech(text) {
 }
 
 /**
- * Finds the best Vietnamese voice available in the browser
+ * Finds the best voice for the requested language available in the browser.
  */
-function getBestViVoice() {
+function getBestVoice(language = 'vi') {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null;
   const voices = window.speechSynthesis.getVoices();
+  const prefix = language === 'en' ? 'en' : 'vi';
+  const locale = language === 'en' ? 'en-us' : 'vi-vn';
+  const matching = voices.filter((voice) => voice.lang?.toLowerCase().startsWith(prefix));
+  const preferredNames = language === 'en'
+    ? ['microsoft', 'google', 'samantha', 'daniel', 'karen', 'ava']
+    : ['microsoft', 'google', 'vietnam', 'hoaimy', 'hoài my'];
+  const byPreferredProvider = matching.find((voice) => {
+    const name = voice.name.toLowerCase();
+    return preferredNames.some((preferred) => name.includes(preferred));
+  });
+
   return (
-    voices.find((v) => v.lang === 'vi-VN' || v.lang === 'vi_VN') ||
-    voices.find((v) => v.lang.startsWith('vi')) ||
-    voices.find((v) => v.name.toLowerCase().includes('vietnam') || v.name.toLowerCase().includes('vietnamese')) ||
+    matching.find((voice) => voice.lang.toLowerCase() === locale) ||
+    byPreferredProvider ||
+    matching.find((voice) => voice.localService) ||
+    matching[0] ||
     null
   );
 }
 
-export function useVoiceAssistant() {
+export function useVoiceAssistant({ language = 'vi' } = {}) {
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -107,7 +127,7 @@ export function useVoiceAssistant() {
     setVoiceSupported({ stt: hasSTT, tts: hasTTS });
 
     const updateVoices = () => {
-      currentVoiceRef.current = getBestViVoice();
+      currentVoiceRef.current = getBestVoice(language);
     };
 
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -129,7 +149,7 @@ export function useVoiceAssistant() {
         try { window.speechSynthesis.cancel(); } catch (_) {}
       }
     };
-  }, []);
+  }, [language]);
 
   // ─── 0. Đảm bảo mỗi lượt nói chỉ gửi duy nhất 1 lần (Chống duplicate Web Speech vs Groq Whisper) ───
   const submitTextOnce = useCallback((text) => {
@@ -230,7 +250,7 @@ export function useVoiceAssistant() {
 
           if (audioBlob.size > 2000) {
             // Gửi sang backend -> Groq Whisper API với model whisper-large-v3
-            const whisperText = await apiTranscribeAudio(audioBlob);
+            const whisperText = await apiTranscribeAudio(audioBlob, language);
             const normalizedWhisper = normalizeVietnameseSpeechText(whisperText);
             if (normalizedWhisper && normalizedWhisper.trim()) {
               submitTextOnce(normalizedWhisper.trim());
@@ -326,7 +346,7 @@ export function useVoiceAssistant() {
           try { recognitionRef.current.abort(); } catch (_) {}
         }
         const recognition = new SpeechRecognition();
-        recognition.lang = 'vi-VN';
+        recognition.lang = language === 'en' ? 'en-US' : 'vi-VN';
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
@@ -379,10 +399,10 @@ export function useVoiceAssistant() {
         console.warn('SpeechRecognition start error:', recErr);
       }
     }
-  }, [stopListening]);
+  }, [language, stopListening]);
 
   // ─── 3. Text-To-Speech (Tự động phát giọng nói ngay khi AI trả lời) ───
-  const speak = useCallback((rawText, messageId = null) => {
+  const speak = useCallback((rawText, messageId = null, requestedLanguage = null) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
     window.speechSynthesis.cancel();
@@ -390,14 +410,21 @@ export function useVoiceAssistant() {
     const cleanText = cleanMarkdownForSpeech(rawText);
     if (!cleanText) return;
 
+    // A user may ask in English while the UI remains Vietnamese. The caller
+    // passes the question language so product names in the answer do not
+    // accidentally change the selected voice.
+    const speechLanguage = requestedLanguage === 'en' || requestedLanguage === 'vi'
+      ? requestedLanguage
+      : language;
+
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'vi-VN';
-    utterance.rate = 1.05; // Tốc độ tự nhiên, rõ ràng
+    utterance.lang = speechLanguage === 'en' ? 'en-US' : 'vi-VN';
+    utterance.rate = speechLanguage === 'en' ? 0.98 : 1.05;
     utterance.pitch = 1.0;
 
-    const viVoice = currentVoiceRef.current || getBestViVoice();
-    if (viVoice) {
-      utterance.voice = viVoice;
+    const voice = getBestVoice(speechLanguage) || currentVoiceRef.current;
+    if (voice) {
+      utterance.voice = voice;
     }
 
     utterance.onstart = () => {
@@ -422,7 +449,7 @@ export function useVoiceAssistant() {
 
     activeUtteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [language]);
 
   const stopSpeaking = useCallback(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {

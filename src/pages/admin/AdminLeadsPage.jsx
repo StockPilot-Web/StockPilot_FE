@@ -54,7 +54,6 @@ import {
   DetailList,
   Section,
   StatCard,
-  useDebounced,
 } from './components/AdminUI';
 import { useAdminText } from './useAdminText';
 
@@ -713,7 +712,6 @@ export function AdminLeadsPage() {
   const openLeadId = Number(params.get('lead')) || null;
 
   const [search, setSearch] = useState(params.get('q') || '');
-  const debouncedSearch = useDebounced(search);
 
   const [sortKey, setSortKey] = useState('lastSubmittedAt');
   const [sortDirection, setSortDirection] = useState('desc');
@@ -736,10 +734,6 @@ export function AdminLeadsPage() {
     if (resetPage) next.delete('page');
     setParams(next, { replace: true });
   };
-
-  useEffect(() => {
-    if ((params.get('q') || '') !== debouncedSearch) updateParams({ q: debouncedSearch });
-  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const query = params.get('q') || '';
   const load = useCallback(

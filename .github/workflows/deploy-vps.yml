@@ -7,7 +7,7 @@ name: Continuous Deployment to VPS
 # GitHub Secrets cần có:
 #   VPS_HOST, VPS_SSH_KEY            bắt buộc
 #   VPS_USERNAME (mặc định root), VPS_PORT (mặc định 22), VPS_PROJECT_DIR (mặc định /var/www/stockpilot)
-#   VPS_KNOWN_HOSTS                  nên có: kết quả `ssh-keyscan -p <port> <host>` để chống giả mạo máy chủ
+#   VPS_KNOWN_HOSTS                  public host key đã xác minh; cổng 22 dùng dạng `<host> ssh-ed25519 ...`
 #   VPS_PASSWORD                     chỉ dùng khi chưa có VPS_SSH_KEY (không khuyến khích)
 
 on:
@@ -54,7 +54,20 @@ jobs:
 
           SSH_OPTS=(-p "$VPS_PORT" -o BatchMode=yes -o ServerAliveInterval=30 -o UserKnownHostsFile="$SSH_DIR/known_hosts")
           if [ -n "$VPS_KNOWN_HOSTS" ]; then
-            printf '%s\n' "$VPS_KNOWN_HOSTS" | tr -d '\r' > "$SSH_DIR/known_hosts"
+            # OpenSSH uses `host` for the default port 22 and `[host]:port` only for non-default ports.
+            # Accept the previously saved `[host]:22` form, but normalize it before strict checking.
+            NORMALIZED_KNOWN_HOSTS=$(printf '%s\n' "$VPS_KNOWN_HOSTS" | tr -d '\r')
+            if [ "$VPS_PORT" = "22" ]; then
+              NORMALIZED_KNOWN_HOSTS=$(printf '%s\n' "$NORMALIZED_KNOWN_HOSTS" | sed -E 's/^\[([^]]+)\]:22 /\1 /')
+              KNOWN_HOST_QUERY="$VPS_HOST"
+            else
+              KNOWN_HOST_QUERY="[$VPS_HOST]:$VPS_PORT"
+            fi
+            printf '%s\n' "$NORMALIZED_KNOWN_HOSTS" > "$SSH_DIR/known_hosts"
+            if ! ssh-keygen -F "$KNOWN_HOST_QUERY" -f "$SSH_DIR/known_hosts" >/dev/null; then
+              echo "❌ VPS_KNOWN_HOSTS không chứa host key cho $KNOWN_HOST_QUERY."
+              exit 1
+            fi
             SSH_OPTS+=(-o StrictHostKeyChecking=yes)
           else
             echo "⚠️ Chưa có secret VPS_KNOWN_HOSTS: chấp nhận host key lần đầu (kém an toàn hơn)."

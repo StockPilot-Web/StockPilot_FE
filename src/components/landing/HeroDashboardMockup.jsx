@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Loader2
 } from 'lucide-react';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 /**
  * HeroDashboardMockup — Faithful recreation of the top hero layout from `StockPilot Landing.html`
@@ -81,7 +82,7 @@ export function HeroDashboardMockup({ language: propLanguage }) {
   const getProduct = (id) => defaultProducts.find((p) => p.id === id);
 
   const [activeCategory, setActiveCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const { draft: searchDraft, query: searchQuery, setDraft: setSearchDraft, apply: applySearch } = useEnterSearch();
   const [selectedProductFeedback, setSelectedProductFeedback] = useState(null);
 
   // Cart state - store ids and quantities to ensure instant bilingual reactivity
@@ -229,8 +230,9 @@ export function HeroDashboardMockup({ language: propLanguage }) {
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchDraft}
+                  onChange={(e) => setSearchDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
                   placeholder={isEn ? 'Search product or SKU...' : 'Tìm sản phẩm theo tên hoặc SKU...'}
                   aria-label="Search product"
                   className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#0F172A] placeholder-slate-400 focus:outline-hidden focus:border-[#006FFF]"

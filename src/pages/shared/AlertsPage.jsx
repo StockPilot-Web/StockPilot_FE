@@ -11,6 +11,7 @@ import { useToast } from '../../components/common/Toast';
 import { useTranslation } from '../../i18n/useTranslation';
 import { useAuthStore } from '../../components/store/authStore';
 import { canResolveAlerts, canRunDecisionEngine, canUseAiAssistant } from '../../config/permissions.config';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 /* ═══ HELPERS ════════════════════════════════════════════════════ */
 const TYPE_META = {
@@ -547,7 +548,7 @@ export function AlertsPage() {
   const [activeTab, setActiveTab] = useState('ALL');
   const [selType, setSelType] = useState('ALL');
   const [selSev, setSelSev] = useState('ALL');
-  const [search, setSearch] = useState('');
+  const { draft: searchDraft, query: search, setDraft: setSearchDraft, apply: applySearch, clear: clearSearch } = useEnterSearch();
   const [modalAlert, setModalAlert] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -645,7 +646,7 @@ export function AlertsPage() {
     });
   }, [navigate, isEn]);
 
-  const clearFilters = () => { setSelType('ALL'); setSelSev('ALL'); setSearch(''); };
+  const clearFilters = () => { setSelType('ALL'); setSelSev('ALL'); clearSearch(); };
 
   const TYPE_TABS = [
     { key: 'ALL', label: isEn ? 'All' : 'Tất cả' },
@@ -699,6 +700,18 @@ export function AlertsPage() {
           position: relative;
           overflow: hidden;
           box-shadow: 0 8px 22px -5px rgba(14, 165, 233, 0.22), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+        }
+        @media (max-width: 768px) {
+          .alerts-hero-header {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 14px;
+            padding: 16px;
+          }
+          .alerts-btn-refresh {
+            justify-content: center;
+            width: 100%;
+          }
         }
         .alerts-hero-header::before {
           content: '';
@@ -845,8 +858,8 @@ export function AlertsPage() {
       </div>
 
       {/* TABS + SEARCH */}
-      <div className="flex flex-row items-center justify-between gap-3 border-b border-border pb-4 overflow-x-auto">
-        <div className="flex items-center gap-2 flex-nowrap shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-4">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           {[
             { key: 'ALL', label: isEn ? 'All' : 'Tất cả', count: alerts.length },
             { key: 'OPEN', label: isEn ? 'Pending' : 'Chưa xử lý', count: openCount },
@@ -889,18 +902,19 @@ export function AlertsPage() {
             </button>
           ))}
         </div>
-        <div style={{ position: 'relative' }} className="w-64 sm:w-72 shrink-0">
+        <div style={{ position: 'relative' }} className="w-full sm:w-64 lg:w-72 shrink-0">
           <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 15, height: 15, color: '#64748b' }} />
           <input
             type="text"
             placeholder={isEn ? "Search product, SKU, risk type..." : "Tìm kiếm tên SP, mã SP, loại rủi ro..."}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={searchDraft}
+            onChange={e => setSearchDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
             style={{ width: '100%', paddingLeft: 34, paddingRight: 32, paddingTop: 8, paddingBottom: 8, fontSize: 13, borderRadius: 12, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
           />
-          {search && (
+          {searchDraft && (
             <button
-              onClick={() => setSearch('')}
+              onClick={clearSearch}
               style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }}
             >
               <X style={{ width: 14, height: 14 }} />

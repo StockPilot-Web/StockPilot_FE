@@ -12,6 +12,7 @@ import { useAuthStore } from '../../components/store/authStore';
 import { isOwner } from '../../config/permissions.config';
 import { useTranslation } from '../../i18n/useTranslation';
 import { formatCategoryName } from '../../components/store/productStore';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 import {
   apiGetPosProducts,
   apiCreatePosSale,
@@ -191,7 +192,7 @@ export function PosPage() {
   const searchInputRef = useRef(null);
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [searchProduct, setSearchProduct] = useState('');
+  const { draft: searchDraft, query: searchProduct, setDraft: setSearchDraft, apply: applySearch, clear: clearSearch } = useEnterSearch();
   const [selectedCategory, setSelectedCategory] = useState('ALL');
 
   const [tabs, setTabs] = useState([
@@ -238,6 +239,7 @@ export function PosPage() {
   const [payosCountdown, setPayosCountdown] = useState(900);
   const [copiedField, setCopiedField] = useState(null);
   const payosPollRef = useRef(null);
+  const payosPollInFlightRef = useRef(false);
   const payosTimerRef = useRef(null);
 
   // ── MoMo E-Wallet Payment State ────────────────────────────────
@@ -248,13 +250,14 @@ export function PosPage() {
   const [momoQrTab, setMomoQrTab] = useState('p2p'); // 'p2p' | 'vietqr' | 'gateway'
   const [isMomoSimulating, setIsMomoSimulating] = useState(false);
   const momoPollRef = useRef(null);
+  const momoPollInFlightRef = useRef(false);
   const momoTimerRef = useRef(null);
 
   // ── MoMo Real Account Config State ─────────────────────────────
   const [momoConfigModalOpen, setMomoConfigModalOpen] = useState(false);
   const [momoConfig, setMomoConfig] = useState(null);
-  const [momoPartnerCodeInput, setMomoPartnerCodeInput] = useState('MOMOVA0I20261015');
-  const [momoAccessKeyInput, setMomoAccessKeyInput] = useState('sjqZwImFcjxZBhHF');
+  const [momoPartnerCodeInput, setMomoPartnerCodeInput] = useState('');
+  const [momoAccessKeyInput, setMomoAccessKeyInput] = useState('');
   const [momoSecretKeyInput, setMomoSecretKeyInput] = useState('');
   const [momoBusinessNameInput, setMomoBusinessNameInput] = useState('STOCKPILOT');
   const [isSavingMomoConfig, setIsSavingMomoConfig] = useState(false);
@@ -264,8 +267,8 @@ export function PosPage() {
       const cfg = await apiGetMomoConfig();
       if (cfg) {
         setMomoConfig(cfg);
-        setMomoPartnerCodeInput(cfg.partnerCode || 'MOMOVA0I20261015');
-        setMomoAccessKeyInput(cfg.accessKey || 'sjqZwImFcjxZBhHF');
+        setMomoPartnerCodeInput(cfg.partnerCode || '');
+        setMomoAccessKeyInput(cfg.accessKey || '');
         setMomoSecretKeyInput(''); // Không tải khóa bí mật ra client
         setMomoBusinessNameInput(cfg.businessName || 'STOCKPILOT');
       }
@@ -928,6 +931,7 @@ export function PosPage() {
       clearInterval(payosTimerRef.current);
       payosTimerRef.current = null;
     }
+    payosPollInFlightRef.current = false;
   }, []);
 
   const stopMomoPolling = useCallback(() => {
@@ -939,6 +943,7 @@ export function PosPage() {
       clearInterval(momoTimerRef.current);
       momoTimerRef.current = null;
     }
+    momoPollInFlightRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -1121,8 +1126,11 @@ export function PosPage() {
           });
         }, 1000);
 
-        // 2. Polling kiểm tra trạng thái thanh toán từ MoMo mỗi 2.5 giây
+        // 2. Polling kiểm tra trạng thái thanh toán từ MoMo mỗi 2.5 giây.
+        // Không gọi khi tab ẩn và không để request chồng lên nhau.
         momoPollRef.current = setInterval(async () => {
+          if (document.visibilityState !== 'visible' || momoPollInFlightRef.current) return;
+          momoPollInFlightRef.current = true;
           try {
             const checkRes = await apiCheckMomoStatus(res.momoOrderId);
             if (checkRes?.isPaid) {
@@ -1165,6 +1173,8 @@ export function PosPage() {
             }
           } catch (pollErr) {
             console.warn('Lỗi kiểm tra MoMo:', pollErr);
+          } finally {
+            momoPollInFlightRef.current = false;
           }
         }, 2500);
       } catch (err) {
@@ -1219,8 +1229,11 @@ export function PosPage() {
           });
         }, 1000);
 
-        // 2. Tự động kiểm tra trạng thái chuyển khoản từ PayOS mỗi 2.5 giây
+        // 2. Tự động kiểm tra trạng thái chuyển khoản từ PayOS mỗi 2.5 giây.
+        // Không gọi khi tab ẩn và không để request chồng lên nhau.
         payosPollRef.current = setInterval(async () => {
+          if (document.visibilityState !== 'visible' || payosPollInFlightRef.current) return;
+          payosPollInFlightRef.current = true;
           try {
             const checkRes = await apiCheckPayosStatus(res.orderCode);
             if (checkRes?.isPaid) {
@@ -1263,6 +1276,8 @@ export function PosPage() {
             }
           } catch (pollErr) {
             console.warn('Lỗi kiểm tra PayOS:', pollErr);
+          } finally {
+            payosPollInFlightRef.current = false;
           }
         }, 2500);
       } catch (err) {
@@ -1358,7 +1373,7 @@ export function PosPage() {
 
 
   return (
-    <div className="flex flex-col lg:flex-row gap-3 h-[calc(100vh-5rem)] max-w-[1760px] mx-auto overflow-hidden">
+    <div className="w-full min-w-0 flex flex-col lg:flex-row gap-3 h-[calc(100vh-5rem)] max-w-[1760px] mx-auto overflow-hidden">
 
       {/* ─── LEFT COLUMN: CART (60%) ─── */}
       <div
@@ -1675,7 +1690,7 @@ export function PosPage() {
 
       {/* ─── RIGHT COLUMN: CATALOG + CHECKOUT (45%) ─── */}
       <div
-        className="w-full lg:w-[580px] xl:w-[660px] 2xl:w-[740px] flex flex-col overflow-hidden shrink-0 rounded-2xl border border-white/80"
+        className="w-full min-w-0 lg:w-[580px] xl:w-[660px] 2xl:w-[740px] flex flex-col overflow-hidden shrink-0 rounded-2xl border border-white/80"
         style={{ background: '#fff', boxShadow: '0 2px 12px rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.04)' }}
       >
         {/* Product Search */}
@@ -1686,13 +1701,14 @@ export function PosPage() {
               ref={searchInputRef}
               type="text"
               placeholder={t('searchProductPlaceholder', 'Tìm hàng hóa theo tên, mã SP, barcode (F3)...')}
-              value={searchProduct}
-              onChange={(e) => setSearchProduct(e.target.value)}
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
               className="w-full pl-8 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
-            {searchProduct && (
+            {searchDraft && (
               <button
-                onClick={() => setSearchProduct('')}
+                onClick={clearSearch}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />

@@ -23,16 +23,6 @@ import { useTranslation } from '../../../i18n/useTranslation';
 
 const ALIGN = { left: 'text-left', right: 'text-right', center: 'text-center' };
 
-/** Debounced copy of a value; used for search boxes so typing does not fire a request per key. */
-export function useDebounced(value, delay = 300) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
-
 /** Checkbox component accessible and cleanly styled for tables */
 export function Checkbox({ checked = false, indeterminate = false, onChange, disabled = false, 'aria-label': ariaLabel }) {
   const ref = useRef(null);
@@ -164,29 +154,47 @@ export function Tabs({ tabs, value, onChange }) {
 export function SearchInput({ value, onChange, placeholder, className = '' }) {
   const { language } = useTranslation();
   const isEn = language === 'en';
+  const [draft, setDraft] = useState(value || '');
+
+  useEffect(() => {
+    setDraft(value || '');
+  }, [value]);
+
+  const submit = (event) => {
+    event.preventDefault();
+    const nextValue = draft.trim();
+    setDraft(nextValue);
+    if (nextValue !== (value || '')) onChange(nextValue);
+  };
+
+  const clear = () => {
+    setDraft('');
+    if (value) onChange('');
+  };
 
   return (
-    <div className={`relative ${className}`}>
+    <form onSubmit={submit} className={`relative ${className}`} role="search">
       <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
       <input
         type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
         placeholder={placeholder || (isEn ? 'Search…' : 'Tìm kiếm…')}
         aria-label={placeholder || (isEn ? 'Search' : 'Tìm kiếm')}
+        title={isEn ? 'Press Enter to search' : 'Nhấn Enter để tìm kiếm'}
         className={`${ui.input} pl-9 pr-8 h-9`}
       />
-      {value && (
+      {draft && (
         <button
           type="button"
-          onClick={() => onChange('')}
+          onClick={clear}
           className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
           aria-label={isEn ? 'Clear search' : 'Xóa tìm kiếm'}
         >
           <X className="w-3.5 h-3.5" />
         </button>
       )}
-    </div>
+    </form>
   );
 }
 

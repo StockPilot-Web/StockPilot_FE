@@ -10,6 +10,7 @@ import { usePricingStore } from '../../components/store/pricingStore';
 import { useToast } from '../../components/common/Toast';
 import { useTranslation } from '../../i18n/useTranslation';
 import { formatCategoryName } from '../../components/store/productStore';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 function formatVND(n) {
   return Number(n || 0).toLocaleString('vi-VN') + ' đ';
@@ -74,7 +75,7 @@ export function PricingPage() {
   }, [fetchRecommendations]);
 
   const [activeTab, setActiveTab] = useState('pending'); // pending | accepted | modified | rejected | history
-  const [searchQuery, setSearchQuery] = useState('');
+  const { draft: searchDraft, query: searchQuery, setDraft: setSearchDraft, apply: applySearch } = useEnterSearch();
   const [selectedAction, setSelectedAction] = useState('ALL'); // ALL | INCREASE | DECREASE | MAINTAIN
 
   // Modals state
@@ -402,8 +403,9 @@ export function PricingPage() {
             <input
               type="text"
               placeholder={isEn ? "Search product, SKU..." : "Tìm sản phẩm, mã SP..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
               className="w-full pl-9 pr-3 py-1.5 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

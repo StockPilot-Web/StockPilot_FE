@@ -15,8 +15,9 @@ import { useStickToBottom } from '../../features/assistant/useStickToBottom';
 import { useTranslation } from '../../i18n/useTranslation';
 import { AISourceBadge } from '../../components/assistant/AISourceBadge';
 import { AISuggestionsPanel } from '../../components/assistant/AISuggestionsPanel';
-import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
+import { detectSpeechLanguage, useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { StockPilotAILogo } from '../../components/common/StockPilotAILogo';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 function parseInlineMarkdown(text) {
   if (!text) return null;
@@ -290,7 +291,7 @@ export function AIAssistantPage() {
   const isEn = language === 'en';
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { draft: searchDraft, query: searchQuery, setDraft: setSearchDraft, apply: applySearch } = useEnterSearch();
   const [inputMessage, setInputMessage] = useState('');
   const [copiedId, setCopiedId] = useState(null);
   const [suggestionsOpen, setSuggestionsOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1280);
@@ -317,7 +318,7 @@ export function AIAssistantPage() {
     stopListening,
     speak,
     stopSpeaking,
-  } = useVoiceAssistant();
+  } = useVoiceAssistant({ language });
 
   const handleToggleVoice = () => {
     if (isListening) {
@@ -362,6 +363,7 @@ export function AIAssistantPage() {
         out.push({
           id: `${turn.id}-a`, sender: 'ai', text: turn.answer, timestamp,
           source: turn.source, fallbackReason: turn.fallbackReason, actionLinks: turn.actionLinks,
+          speechLanguage: detectSpeechLanguage(turn.question, language),
         });
       }
       return out;
@@ -398,9 +400,9 @@ export function AIAssistantPage() {
     if (autoSpeakEnabled) {
       lastSpokenTurnIdRef.current = lastTurn.id;
       shouldSpeakNextResponseRef.current = false; // Đã đọc xong câu trả lời này
-      speak(lastTurn.answer, `${lastTurn.id}-a`);
+      speak(lastTurn.answer, `${lastTurn.id}-a`, detectSpeechLanguage(lastTurn.question, language));
     }
-  }, [lastTurn, autoSpeakEnabled, speak]);
+  }, [lastTurn, autoSpeakEnabled, speak, language]);
   const { containerRef: feedRef, onScroll: onFeedScroll, scrollToBottom, stick, hasUnseen } = useStickToBottom({
     sessionKey: activeChatId,
     itemCount: messages.length,
@@ -644,8 +646,9 @@ export function AIAssistantPage() {
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
               placeholder={isEn ? "Search chat history..." : "Tìm kiếm lịch sử chat..."}
               className="w-full pl-8 pr-3 py-1.5 bg-slate-50 text-slate-800 placeholder:text-slate-400 text-xs rounded-lg border border-slate-200 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 transition-all"
             />
@@ -930,7 +933,7 @@ export function AIAssistantPage() {
                           {voiceSupported.tts && (
                             <button
                               type="button"
-                              onClick={() => speak(msg.text, msg.id)}
+                              onClick={() => speak(msg.text, msg.id, msg.speechLanguage)}
                               className={`flex items-center gap-1 transition-colors ml-2 cursor-pointer ${
                                 isSpeaking && speakingMessageId === msg.id
                                   ? 'text-blue-600 font-bold animate-pulse'
