@@ -318,7 +318,7 @@ export function PosPage() {
 
 
   // ── Scanner state ──────────────────────────────────────────────
-  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/80620358-4eab-4a05-8581-9f89d4bea9aa';
+  const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/a9d7552b-7d97-43ba-928f-7653ff45f36d';
   const isLocalWebHost =
     typeof window !== 'undefined' &&
     window.location &&
@@ -342,7 +342,8 @@ export function PosPage() {
         !saved.includes('e00500ee-9772-44d6-a7a4-c34e10b178e0') &&
         !saved.includes('8f45a61c-8413-47a4-bb6f-e6099e88ddca') &&
         !saved.includes('15009017-f185-4838-bb6a-afe6d427fd1a') &&
-        !saved.includes('6e99e6e6-e918-4053-ae62-ef339f0293ba')
+        !saved.includes('6e99e6e6-e918-4053-ae62-ef339f0293ba') &&
+        !saved.includes('80620358-4eab-4a05-8581-9f89d4bea9aa')
       ) {
         return saved;
       }
