@@ -5,6 +5,7 @@ import {
   Search, ChevronRight, BarChart2, ShoppingBag, Star,
   Grid, List, ArrowUp, ArrowDown, Boxes, Flame, Zap
 } from 'lucide-react';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 const COLOR_MAPS = {
   amber:   { bg: 'bg-amber-50',   border: 'border-amber-200',  text: 'text-amber-700',  badge: 'bg-amber-100 text-amber-700',  icon: 'text-amber-500',  gradient: 'from-amber-400 to-orange-500',  ring: 'ring-amber-200' },
@@ -165,7 +166,7 @@ function ProductRow({ product, index }) {
 export function CategoriesPage() {
   const { products, fetchProducts } = useProductStore();
   const [selectedCat, setSelectedCat] = useState(null);
-  const [search, setSearch] = useState('');
+  const { draft: searchDraft, query: search, setDraft: setSearchDraft, apply: applySearch } = useEnterSearch();
   const [sortBy, setSortBy] = useState('count'); // count | stock | revenue
   const [sortDir, setSortDir] = useState('desc');
 
@@ -252,8 +253,9 @@ export function CategoriesPage() {
             <input
               type="text"
               placeholder="Tìm sản phẩm..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+              value={searchDraft}
+              onChange={e => setSearchDraft(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
               className="text-sm outline-none bg-transparent w-44 placeholder:text-gray-400"
             />
           </div>

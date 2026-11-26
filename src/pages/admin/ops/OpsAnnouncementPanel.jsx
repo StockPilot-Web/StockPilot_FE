@@ -6,6 +6,7 @@ import { apiBroadcastAnnouncement } from '../../../services/adminOpsService';
 import { apiErrorMessage } from '../adminLabels';
 import { adminStyles as ui } from '../adminStyles';
 import { ConfirmDialog, PanelCard } from '../components/AdminUI';
+import { useEnterSearch } from '../../../hooks/useEnterSearch';
 import { useAdminText } from '../useAdminText';
 import { formatNumber, useOpsData } from './opsShared';
 
@@ -25,7 +26,7 @@ export function OpsAnnouncementPanel() {
   const [target, setTarget] = useState('ALL');
   const [selected, setSelected] = useState([]);
   const [roles, setRoles] = useState(['SHOP_OWNER', 'WAREHOUSE_STAFF']);
-  const [search, setSearch] = useState('');
+  const { draft: searchDraft, query: search, setDraft: setSearchDraft, apply: applySearch } = useEnterSearch();
   const [touched, setTouched] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
@@ -150,8 +151,9 @@ export function OpsAnnouncementPanel() {
                   <div className="relative border-b border-slate-100">
                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
                     <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
+                      value={searchDraft}
+                      onChange={(e) => setSearchDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
                       placeholder={t('Tìm theo tên hoặc mã cửa hàng', 'Search by store name or code')}
                       className="w-full pl-9 pr-3 py-2 text-[13px] rounded-t-lg focus:outline-none"
                       aria-label={t('Tìm cửa hàng', 'Search stores')}

@@ -18,6 +18,14 @@ export function normalizeVietnameseSpeechText(text) {
   return result;
 }
 
+export function detectSpeechLanguage(text, fallback = 'vi') {
+  const value = String(text || '').trim().toLowerCase();
+  if (!value) return fallback;
+  if (/[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i.test(value)) return 'vi';
+  const vietnameseWords = ['hàng', 'kho', 'tồn', 'bán', 'doanh', 'thu', 'lợi', 'nhuận', 'sản phẩm', 'cảnh báo'];
+  return vietnameseWords.some((word) => value.includes(word)) ? 'vi' : 'en';
+}
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { apiTranscribeAudio } from '../services/analyticsService';
 
@@ -67,10 +75,21 @@ function getBestVoice(language = 'vi') {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null;
   const voices = window.speechSynthesis.getVoices();
   const prefix = language === 'en' ? 'en' : 'vi';
+  const locale = language === 'en' ? 'en-us' : 'vi-vn';
+  const matching = voices.filter((voice) => voice.lang?.toLowerCase().startsWith(prefix));
+  const preferredNames = language === 'en'
+    ? ['microsoft', 'google', 'samantha', 'daniel', 'karen', 'ava']
+    : ['microsoft', 'google', 'vietnam', 'hoaimy', 'hoài my'];
+  const byPreferredProvider = matching.find((voice) => {
+    const name = voice.name.toLowerCase();
+    return preferredNames.some((preferred) => name.includes(preferred));
+  });
+
   return (
-    voices.find((v) => v.lang.toLowerCase() === (language === 'en' ? 'en-us' : 'vi-vn')) ||
-    voices.find((v) => v.lang.toLowerCase().startsWith(prefix)) ||
-    (language === 'vi' ? voices.find((v) => v.name.toLowerCase().includes('vietnam')) : null) ||
+    matching.find((voice) => voice.lang.toLowerCase() === locale) ||
+    byPreferredProvider ||
+    matching.find((voice) => voice.localService) ||
+    matching[0] ||
     null
   );
 }
@@ -383,7 +402,7 @@ export function useVoiceAssistant({ language = 'vi' } = {}) {
   }, [language, stopListening]);
 
   // ─── 3. Text-To-Speech (Tự động phát giọng nói ngay khi AI trả lời) ───
-  const speak = useCallback((rawText, messageId = null) => {
+  const speak = useCallback((rawText, messageId = null, requestedLanguage = null) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
     window.speechSynthesis.cancel();
@@ -391,12 +410,19 @@ export function useVoiceAssistant({ language = 'vi' } = {}) {
     const cleanText = cleanMarkdownForSpeech(rawText);
     if (!cleanText) return;
 
+    // A user may ask in English while the UI remains Vietnamese. The caller
+    // passes the question language so product names in the answer do not
+    // accidentally change the selected voice.
+    const speechLanguage = requestedLanguage === 'en' || requestedLanguage === 'vi'
+      ? requestedLanguage
+      : language;
+
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = language === 'en' ? 'en-US' : 'vi-VN';
-    utterance.rate = language === 'en' ? 0.98 : 1.05;
+    utterance.lang = speechLanguage === 'en' ? 'en-US' : 'vi-VN';
+    utterance.rate = speechLanguage === 'en' ? 0.98 : 1.05;
     utterance.pitch = 1.0;
 
-    const voice = currentVoiceRef.current || getBestVoice(language);
+    const voice = getBestVoice(speechLanguage) || currentVoiceRef.current;
     if (voice) {
       utterance.voice = voice;
     }

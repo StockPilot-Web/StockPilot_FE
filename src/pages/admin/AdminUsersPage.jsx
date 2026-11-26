@@ -66,7 +66,6 @@ import {
   Drawer,
   DetailList,
   Section,
-  useDebounced,
 } from './components/AdminUI';
 import { useAdminText } from './useAdminText';
 import { PurgeStoresDialog } from './components/PurgeStoresDialog';
@@ -418,7 +417,6 @@ export function AdminUsersPage() {
   const limit = Number(params.get('limit')) || 20;
 
   const [search, setSearch] = useState(params.get('q') || '');
-  const debouncedSearch = useDebounced(search);
 
   const [sortKey, setSortKey] = useState('createdAt');
   const [sortDirection, setSortDirection] = useState('desc');
@@ -447,10 +445,6 @@ export function AdminUsersPage() {
     if (resetPage && key !== 'page') next.delete('page');
     setParams(next, { replace: true });
   };
-
-  useEffect(() => {
-    if ((params.get('q') || '') !== debouncedSearch) setParam('q', debouncedSearch);
-  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = useCallback(async () => {
     setIsLoading(true);

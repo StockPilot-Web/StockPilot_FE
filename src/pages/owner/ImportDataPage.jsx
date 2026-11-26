@@ -44,29 +44,60 @@ const SOURCES = [
   {
     id: 'kiotviet',
     name: 'KiotViet',
+    nameEn: 'KiotViet',
     PRODUCTS: ['Mở Hàng hóa → Danh sách hàng hóa.', 'Bấm Xuất file để tải toàn bộ hàng hóa.'],
+    PRODUCTS_EN: ['Go to Products → Product List.', 'Click Export file to download all products.'],
     SALES: ['Mở Giao dịch → Hóa đơn, lọc khoảng thời gian cần chuyển.', 'Bấm Xuất file, chọn File chi tiết (mỗi dòng một mặt hàng).'],
+    SALES_EN: ['Go to Transactions → Invoices, filter the desired time period.', 'Click Export file, choose Detailed file (one item per line).'],
     note: 'Đang dùng file Excel mẫu miễn phí của KiotViet (chưa dùng phần mềm)? Tải nguyên file lên: hệ thống tự lấy trang Danh mục cho sản phẩm và trang Xuất hàng cho lịch sử bán, bỏ qua trang Nhập hàng.',
+    noteEn: 'Using KiotViet free Excel template (no software yet)? Upload the whole file directly: the system automatically extracts the Catalogue sheet for products and Sales sheet for sales history, ignoring the Purchases sheet.',
   },
   {
     id: 'sapo',
     name: 'Sapo',
+    nameEn: 'Sapo',
     PRODUCTS: ['Mở Sản phẩm → Danh sách sản phẩm.', 'Bấm Xuất file. Các cột như PL_Giá bán lẻ, LC_CN1_Tồn kho ban đầu được nhận diện tự động.'],
+    PRODUCTS_EN: ['Go to Products → Product List.', 'Click Export file. Columns like retail price and initial stock are recognized automatically.'],
     SALES: ['Mở Đơn hàng → Danh sách đơn hàng, lọc khoảng thời gian.', 'Bấm Xuất file, chọn File tổng quan theo sản phẩm.'],
+    SALES_EN: ['Go to Orders → Order List, filter the desired time period.', 'Click Export file, choose Overview by product.'],
   },
   {
     id: 'misa',
     name: 'MISA eShop',
+    nameEn: 'MISA eShop',
     PRODUCTS: ['Mở Danh mục → Hàng hóa.', 'Xuất danh sách hàng hóa ra Excel (hoặc dùng tệp mẫu Nhập khẩu đã điền).'],
+    PRODUCTS_EN: ['Go to Catalog → Products.', 'Export product list to Excel (or use the filled import template).'],
     SALES: ['Mở báo cáo bán hàng chi tiết theo mặt hàng.', 'Xuất ra Excel, cần có cột mã SKU, số lượng, đơn giá và ngày bán.'],
+    SALES_EN: ['Open the detailed sales report by item.', 'Export to Excel; make sure SKU, quantity, unit price, and sale date columns are included.'],
   },
   {
     id: 'other',
     name: 'Excel / phần mềm khác',
+    nameEn: 'Excel / Other software',
     PRODUCTS: ['Xuất danh sách sản phẩm ra Excel từ phần mềm đang dùng, hoặc điền vào file mẫu bên cạnh.'],
+    PRODUCTS_EN: ['Export product list to Excel from your current software, or fill in the template on the right.'],
     SALES: ['Xuất chi tiết hóa đơn (mỗi dòng một mặt hàng) ra Excel, hoặc điền vào file mẫu bên cạnh.'],
+    SALES_EN: ['Export invoice details (one item per line) to Excel, or fill in the template on the right.'],
   },
 ];
+
+const FIELD_LABELS_EN = {
+  sku: 'SKU',
+  productName: 'Product Name',
+  categoryName: 'Category',
+  barcode: 'Barcode',
+  costPrice: 'Cost Price',
+  sellingPrice: 'Selling Price',
+  initialQuantity: 'Stock',
+  minStockLevel: 'Min Stock',
+  maxStockLevel: 'Max Stock',
+  productType: 'Product Type',
+  quantity: 'Quantity',
+  unitPrice: 'Unit Price',
+  orderDate: 'Sale Date',
+};
+
+const getFieldLabel = (f, isEn) => (isEn ? FIELD_LABELS_EN[f] || f : FIELD_LABELS[f] || f);
 
 const REQUIRED_HINT = {
   PRODUCTS: 'Bắt buộc: Mã hàng, Tên hàng. Nên có: Nhóm hàng, Giá bán, Giá vốn, Tồn kho.',
@@ -115,37 +146,47 @@ function convertSheet(sheet, kind, detection = detectSheet(sheet.data, kind)) {
 
 const formatMoney = (n) => n.toLocaleString('vi-VN', { maximumFractionDigits: 2 });
 
-function CostSheetPanel({ match, enabled, onToggle }) {
+function CostSheetPanel({ match, enabled, onToggle, isEn }) {
   const total = match.matched + match.unmatched.length + match.ambiguous.length;
   return (
     <div className="rounded-lg border border-[#E5E7EB] p-3 text-[13px] space-y-2">
       <label className="flex items-start gap-2 cursor-pointer">
         <input type="checkbox" className="mt-0.5" checked={enabled} onChange={(e) => onToggle(e.target.checked)} />
         <span>
-          <span className="block font-medium text-[#334155]">Lấy giá vốn từ trang “{match.sheetName}”</span>
+          <span className="block font-medium text-[#334155]">
+            {isEn ? `Apply cost price from sheet “${match.sheetName}”` : `Lấy giá vốn từ trang “${match.sheetName}”`}
+          </span>
           <span className="block text-[12px] text-[#64748B]">
-            Ghép theo “Tên (ĐVT)” rồi theo tên hàng (không phân biệt hoa thường). Chỉ điền cho dòng chưa có giá vốn.
+            {isEn
+              ? 'Match by product name (case-insensitive). Only fills rows missing cost price in main sheet.'
+              : 'Ghép theo “Tên (ĐVT)” rồi theo tên hàng (không phân biệt hoa thường). Chỉ điền cho dòng chưa có giá vốn.'}
           </span>
         </span>
       </label>
       {total > 0 && (
         <p className="text-[#475569]">
-          Khớp <b className="text-emerald-700">{match.matched.toLocaleString('vi-VN')}</b>/{total.toLocaleString('vi-VN')} mã
-          {match.unmatched.length > 0 && <>, <b>{match.unmatched.length}</b> mã không tìm thấy tên</>}
+          {isEn ? 'Matched ' : 'Khớp '}
+          <b className="text-emerald-700">{match.matched.toLocaleString(isEn ? 'en-US' : 'vi-VN')}</b>/
+          {total.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'SKUs' : 'mã'}
+          {match.unmatched.length > 0 && (
+            <>{isEn ? ', ' : ', '}<b>{match.unmatched.length}</b> {isEn ? 'SKUs not found' : 'mã không tìm thấy tên'}</>
+          )}
           {match.ambiguous.length > 0 && (
-            <>, <b className="text-[#D97706]">{match.ambiguous.length}</b> mã trùng tên hoặc có nhiều giá nên để 0</>
+            <>{isEn ? ', ' : ', '}<b className="text-[#D97706]">{match.ambiguous.length}</b> {isEn ? 'SKUs duplicate or multiple prices (set to 0)' : 'mã trùng tên hoặc có nhiều giá nên để 0'}</>
           )}
           .
         </p>
       )}
       {match.ambiguous.length > 0 && (
         <details className="text-[12px] text-[#64748B]">
-          <summary className="cursor-pointer">Xem mã không ghép được vì trùng tên hoặc nhiều giá (thường do khác đơn vị tính, cần nhập tay)</summary>
+          <summary className="cursor-pointer">
+            {isEn ? 'View unmatched items due to duplicate name or multiple prices' : 'Xem mã không ghép được vì trùng tên hoặc nhiều giá (thường do khác đơn vị tính, cần nhập tay)'}
+          </summary>
           <ul className="mt-1.5 max-h-40 overflow-y-auto space-y-0.5">
             {match.ambiguous.map((a) => (
               <li key={a.row}>
-                Dòng {a.row} · {a.sku} · {a.name}:{' '}
-                {a.sharedName ? 'tên này dùng cho nhiều mã trong file' : a.values.map(formatMoney).join(' / ')}
+                {isEn ? 'Row ' : 'Dòng '}{a.row} · {a.sku} · {a.name}:{' '}
+                {a.sharedName ? (isEn ? 'name used for multiple SKUs in file' : 'tên này dùng cho nhiều mã trong file') : a.values.map(formatMoney).join(' / ')}
               </li>
             ))}
           </ul>
@@ -153,11 +194,11 @@ function CostSheetPanel({ match, enabled, onToggle }) {
       )}
       {match.unmatched.length > 0 && (
         <details className="text-[12px] text-[#64748B]">
-          <summary className="cursor-pointer">Xem mã không tìm thấy giá vốn (giữ 0)</summary>
+          <summary className="cursor-pointer">{isEn ? 'View SKUs without cost price (kept at 0)' : 'Xem mã không tìm thấy giá vốn (giữ 0)'}</summary>
           <ul className="mt-1.5 max-h-40 overflow-y-auto space-y-0.5">
             {match.unmatched.slice(0, 300).map((u) => (
               <li key={u.row}>
-                Dòng {u.row} · {u.sku} · {u.name}
+                {isEn ? 'Row ' : 'Dòng '}{u.row} · {u.sku} · {u.name}
               </li>
             ))}
           </ul>
@@ -194,28 +235,31 @@ function stockChangesOf(res, toExcelRow) {
 
 const formatSigned = (n) => `${n > 0 ? '+' : ''}${n.toLocaleString('vi-VN')}`;
 
-function StockChangeSummary({ changes }) {
+function StockChangeSummary({ changes, isEn }) {
+  const fmtSigned = (n) => `${n > 0 ? '+' : ''}${n.toLocaleString(isEn ? 'en-US' : 'vi-VN')}`;
   return (
     <div className="rounded-lg border border-[#E5E7EB] text-[13px]">
       <p className="px-3 py-2 border-b border-[#E5E7EB] text-[#475569]">
-        <b className="text-[#334155]">{changes.changed.length.toLocaleString('vi-VN')}</b> mã sẽ đổi tồn kho
+        <b className="text-[#334155]">{changes.changed.length.toLocaleString(isEn ? 'en-US' : 'vi-VN')}</b>{' '}
+        {isEn ? 'SKUs will change inventory' : 'mã sẽ đổi tồn kho'}
         {changes.changed.length > 0 && (
           <>
-            {' '}(tăng <b className="text-emerald-700">{formatSigned(changes.increase)}</b>, giảm{' '}
-            <b className="text-[#DC2626]">{formatSigned(changes.decrease)}</b> đơn vị)
+            {' '}({isEn ? 'increase ' : 'tăng '}<b className="text-emerald-700">{fmtSigned(changes.increase)}</b>,{' '}
+            {isEn ? 'decrease ' : 'giảm '}<b className="text-[#DC2626]">{fmtSigned(changes.decrease)}</b> {isEn ? 'units' : 'đơn vị'})
           </>
         )}
-        , <b className="text-[#334155]">{changes.unchanged.toLocaleString('vi-VN')}</b> mã khớp số đếm.
+        , <b className="text-[#334155]">{changes.unchanged.toLocaleString(isEn ? 'en-US' : 'vi-VN')}</b>{' '}
+        {isEn ? 'SKUs match count.' : 'mã khớp số đếm.'}
       </p>
       {changes.changed.length > 0 && (
         <div className="max-h-56 overflow-y-auto">
           <table className="w-full">
             <thead className="sticky top-0 bg-[#F8FAFC] text-[12px] text-[#64748B]">
               <tr>
-                <th className="text-left font-medium px-3 py-1.5">Mặt hàng</th>
-                <th className="text-right font-medium px-3 py-1.5">Hiện tại</th>
-                <th className="text-right font-medium px-3 py-1.5">Số đếm</th>
-                <th className="text-right font-medium px-3 py-1.5">Chênh lệch</th>
+                <th className="text-left font-medium px-3 py-1.5">{isEn ? 'Product' : 'Mặt hàng'}</th>
+                <th className="text-right font-medium px-3 py-1.5">{isEn ? 'Current' : 'Hiện tại'}</th>
+                <th className="text-right font-medium px-3 py-1.5">{isEn ? 'Counted' : 'Số đếm'}</th>
+                <th className="text-right font-medium px-3 py-1.5">{isEn ? 'Difference' : 'Chênh lệch'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E7EB]">
@@ -223,12 +267,12 @@ function StockChangeSummary({ changes }) {
                 <tr key={c.row}>
                   <td className="px-3 py-1.5">
                     <span className="block text-[#334155] truncate max-w-[280px]" title={c.name}>{c.name}</span>
-                    <span className="block text-[11px] text-[#94A3B8]">Dòng {c.row} · {c.sku}</span>
+                    <span className="block text-[11px] text-[#94A3B8]">{isEn ? 'Row ' : 'Dòng '}{c.row} · {c.sku}</span>
                   </td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{c.before.toLocaleString('vi-VN')}</td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{c.after.toLocaleString('vi-VN')}</td>
+                  <td className="px-3 py-1.5 text-right tabular-nums">{c.before.toLocaleString(isEn ? 'en-US' : 'vi-VN')}</td>
+                  <td className="px-3 py-1.5 text-right tabular-nums">{c.after.toLocaleString(isEn ? 'en-US' : 'vi-VN')}</td>
                   <td className={`px-3 py-1.5 text-right tabular-nums font-medium ${c.delta > 0 ? 'text-emerald-700' : 'text-[#DC2626]'}`}>
-                    {formatSigned(c.delta)}
+                    {fmtSigned(c.delta)}
                   </td>
                 </tr>
               ))}
@@ -292,11 +336,19 @@ export function ImportDataPage() {
     if (!file) return;
     reset();
     if (!ACCEPTED.test(file.name)) {
-      toast({ type: 'warning', title: 'Chưa hỗ trợ định dạng này', description: 'Dùng file .xlsx hoặc .csv. File .xls cũ: mở bằng Excel rồi lưu lại dạng .xlsx.' });
+      toast({
+        type: 'warning',
+        title: isEn ? 'Format not supported' : 'Chưa hỗ trợ định dạng này',
+        description: isEn ? 'Use .xlsx or .csv. Older .xls: open in Excel and re-save as .xlsx.' : 'Dùng file .xlsx hoặc .csv. File .xls cũ: mở bằng Excel rồi lưu lại dạng .xlsx.',
+      });
       return;
     }
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      toast({ type: 'warning', title: 'File quá lớn', description: `Tối đa ${MAX_FILE_MB} MB. Hãy chia file theo khoảng thời gian.` });
+      toast({
+        type: 'warning',
+        title: isEn ? 'File too large' : 'File quá lớn',
+        description: isEn ? `Maximum ${MAX_FILE_MB} MB. Please split file by date range.` : `Tối đa ${MAX_FILE_MB} MB. Hãy chia file theo khoảng thời gian.`,
+      });
       return;
     }
     setBusy('read');
@@ -311,7 +363,11 @@ export function ImportDataPage() {
       setParsed(convertSheet(workbook[index], kind, picked.detection || undefined));
       setCostSheet(kind === IMPORT_KINDS.PRODUCTS ? findCostSheet(workbook, index) : null);
     } catch {
-      toast({ type: 'error', title: 'Không đọc được file', description: 'File có thể bị hỏng hoặc đang đặt mật khẩu. Hãy xuất lại file.' });
+      toast({
+        type: 'error',
+        title: isEn ? 'Could not read file' : 'Không đọc được file',
+        description: isEn ? 'File may be corrupted or password-protected. Please export again.' : 'File có thể bị hỏng hoặc đang đặt mật khẩu. Hãy xuất lại file.',
+      });
     } finally {
       setBusy('');
     }
@@ -326,7 +382,11 @@ export function ImportDataPage() {
       if (kind === IMPORT_KINDS.PRODUCTS) {
         const { payload, rows } = productPayload(excluded);
         if (payload.length === 0) {
-          toast({ type: 'warning', title: 'Không còn dòng nào để nhập', description: 'Kiểm tra lại file hoặc chế độ nhập.' });
+          toast({
+            type: 'warning',
+            title: isEn ? 'No rows left to import' : 'Không còn dòng nào để nhập',
+            description: isEn ? 'Please check file or import mode.' : 'Kiểm tra lại file hoặc chế độ nhập.',
+          });
           return;
         }
         const res = await apiPreviewProductImport(payload, productMode);
@@ -358,14 +418,18 @@ export function ImportDataPage() {
                 row: r.rowNumber + i,
                 sku: r.sku,
                 severity: r.status === 'INVALID' ? 'ERROR' : 'WARNING',
-                message: r.message || (r.status === 'DUPLICATE' ? 'Đã nhập trước đó, sẽ bỏ qua' : 'Cần kiểm tra'),
+                message: r.message || (r.status === 'DUPLICATE' ? (isEn ? 'Already imported previously, will skip' : 'Đã nhập trước đó, sẽ bỏ qua') : (isEn ? 'Needs review' : 'Cần kiểm tra')),
               }))
           );
         }
         setPreview(totals);
       }
     } catch (err) {
-      toast({ type: 'error', title: 'Kiểm tra thất bại', description: err?.response?.data?.error?.message || 'Không kết nối được máy chủ.' });
+      toast({
+        type: 'error',
+        title: isEn ? 'Validation failed' : 'Kiểm tra thất bại',
+        description: err?.response?.data?.error?.message || (isEn ? 'Could not reach server.' : 'Không kết nối được máy chủ.'),
+      });
     } finally {
       setBusy('');
     }
@@ -387,16 +451,28 @@ export function ImportDataPage() {
         const sum = res.summary || res.data?.summary || {};
         setResult(
           productMode === PRODUCT_IMPORT_MODES.REPLACE_STOCK
-            ? `Đã cập nhật tồn kho cho ${sum.updatedSkus ?? preview.valid} mã hàng theo số kiểm kê.`
-            : `Đã nhập ${sum.createdSkus ?? preview.valid} mã hàng${sum.updatedSkus ? `, cập nhật ${sum.updatedSkus}` : ''}.`
+            ? (isEn
+                ? `Updated inventory for ${sum.updatedSkus ?? preview.valid} SKUs according to inventory count.`
+                : `Đã cập nhật tồn kho cho ${sum.updatedSkus ?? preview.valid} mã hàng theo số kiểm kê.`)
+            : (isEn
+                ? `Imported ${sum.createdSkus ?? preview.valid} SKUs${sum.updatedSkus ? `, updated ${sum.updatedSkus}` : ''}.`
+                : `Đã nhập ${sum.createdSkus ?? preview.valid} mã hàng${sum.updatedSkus ? `, cập nhật ${sum.updatedSkus}` : ''}.`)
         );
       } else {
         for (const jobId of preview.batches) await apiCommitSalesImport(jobId);
-        setResult(`Đã nhập ${preview.valid.toLocaleString('vi-VN')} dòng lịch sử bán hàng.`);
+        setResult(
+          isEn
+            ? `Imported ${preview.valid.toLocaleString('en-US')} sales history rows.`
+            : `Đã nhập ${preview.valid.toLocaleString('vi-VN')} dòng lịch sử bán hàng.`
+        );
       }
-      toast({ type: 'success', title: 'Nhập dữ liệu thành công' });
+      toast({ type: 'success', title: isEn ? 'Data imported successfully' : 'Nhập dữ liệu thành công' });
     } catch (err) {
-      toast({ type: 'error', title: 'Nhập dữ liệu thất bại', description: err?.response?.data?.error?.message || 'Không kết nối được máy chủ.' });
+      toast({
+        type: 'error',
+        title: isEn ? 'Data import failed' : 'Nhập dữ liệu thất bại',
+        description: err?.response?.data?.error?.message || (isEn ? 'Could not reach server.' : 'Không kết nối được máy chủ.'),
+      });
     } finally {
       setBusy('');
     }
@@ -508,7 +584,7 @@ export function ImportDataPage() {
 
             {sheets.length > 1 && (
               <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-[#475569]">
-                Trang tính:
+                {isEn ? 'Sheet:' : 'Trang tính:'}
                 <select
                   value={sheetIndex}
                   onChange={(e) => {
@@ -527,69 +603,76 @@ export function ImportDataPage() {
                     </option>
                   ))}
                 </select>
-                <span className="text-[12px] text-[#94A3B8]">File có {sheets.length} trang, hệ thống đã tự chọn trang phù hợp nhất.</span>
+                <span className="text-[12px] text-[#94A3B8]">
+                  {isEn
+                    ? `File has ${sheets.length} sheets; system auto-selected best match.`
+                    : `File có ${sheets.length} trang, hệ thống đã tự chọn trang phù hợp nhất.`}
+                </span>
               </label>
             )}
 
             {parsed && !detection.kind && (
               <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-[13px] text-red-800">
-                Không nhận ra cột nào trong file. Kiểm tra lại loại dữ liệu đã chọn ở bước 1, hoặc dùng file mẫu bên cạnh. Dòng tiêu đề cần nằm trong 10 dòng đầu.
+                {isEn
+                  ? 'No recognizable columns in file. Please check selected data type or use template. Header must be in first 10 rows.'
+                  : 'Không nhận ra cột nào trong file. Kiểm tra lại loại dữ liệu đã chọn ở bước 1, hoặc dùng file mẫu bên cạnh. Dòng tiêu đề cần nằm trong 10 dòng đầu.'}
               </div>
             )}
 
             {parsed && detection.kind && (
               <div className="mt-4 space-y-3">
                 <div>
-                  <p className="text-[13px] font-medium text-[#334155] mb-1.5">Cột đã nhận diện</p>
+                  <p className="text-[13px] font-medium text-[#334155] mb-1.5">{isEn ? 'Recognized columns' : 'Cột đã nhận diện'}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(detection.mapping).map(([field, index]) => (
                       <span key={field} className={`${ui.badge} ${ui.badgeGray}`}>
-                        {FIELD_LABELS[field]} ← “{detection.headers[index]}”
+                        {getFieldLabel(field, isEn)} ← “{detection.headers[index]}”
                       </span>
                     ))}
                   </div>
                 </div>
                 {detection.missing.length > 0 ? (
                   <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-[13px] text-red-800">
-                    Thiếu cột bắt buộc: {detection.missing.map((f) => FIELD_LABELS[f]).join(', ')}.
+                    {isEn ? 'Missing required columns: ' : 'Thiếu cột bắt buộc: '}
+                    {detection.missing.map((f) => getFieldLabel(f, isEn)).join(', ')}.
                   </div>
                 ) : (
                   <p className="text-[13px] text-[#475569]">
-                    Đọc được <b>{parsed.payload.length.toLocaleString('vi-VN')}</b> dòng
+                    {isEn ? 'Read ' : 'Đọc được '}<b>{parsed.payload.length.toLocaleString(isEn ? 'en-US' : 'vi-VN')}</b>{isEn ? ' rows' : ' dòng'}
                     {parsed.skipped.length > 0 && (
                       <>
-                        , bỏ qua <b>{parsed.skipped.length}</b> dòng
+                        {isEn ? ', skipped ' : ', bỏ qua '}<b>{parsed.skipped.length}</b>{isEn ? ' rows' : ' dòng'}
                       </>
                     )}
                     {fileWarnings.length > 0 && (
                       <>
-                        , <b className="text-[#D97706]">{fileWarnings.length}</b> dòng bị điều chỉnh giá trị
+                        {isEn ? ', ' : ', '}<b className="text-[#D97706]">{fileWarnings.length}</b>{isEn ? ' rows adjusted' : ' dòng bị điều chỉnh giá trị'}
                       </>
                     )}
                     .
                   </p>
                 )}
-                {costSheetApplies && <CostSheetPanel match={costMatch} enabled={useCostSheet} onToggle={(v) => { setUseCostSheet(v); setPreview(null); }} />}
+                {costSheetApplies && <CostSheetPanel match={costMatch} enabled={useCostSheet} onToggle={(v) => { setUseCostSheet(v); setPreview(null); }} isEn={isEn} />}
                 {fileWarnings.length > 0 && (
                   <details className="text-[12px] text-[#64748B]">
-                    <summary className="cursor-pointer">Xem các giá trị bị điều chỉnh (nên sửa trong file nếu sai)</summary>
+                    <summary className="cursor-pointer">{isEn ? 'View adjusted values (should fix in file if wrong)' : 'Xem các giá trị bị điều chỉnh (nên sửa trong file nếu sai)'}</summary>
                     <ul className="mt-1.5 max-h-40 overflow-y-auto space-y-0.5">
                       {fileWarnings.slice(0, 200).map((w, i) => (
                         <li key={`${w.row}-${i}`}>
-                          Dòng {w.row} · {w.sku}: {w.message}
+                          {isEn ? 'Row ' : 'Dòng '}{w.row} · {w.sku}: {w.message}
                         </li>
                       ))}
                     </ul>
-                    {fileWarnings.length > 200 && <p className="mt-1">… và {fileWarnings.length - 200} dòng khác.</p>}
+                    {fileWarnings.length > 200 && <p className="mt-1">{isEn ? `… and ${fileWarnings.length - 200} more rows.` : `… và ${fileWarnings.length - 200} dòng khác.`}</p>}
                   </details>
                 )}
                 {parsed.skipped.length > 0 && (
                   <details className="text-[12px] text-[#64748B]">
-                    <summary className="cursor-pointer">Xem các dòng bị bỏ qua</summary>
+                    <summary className="cursor-pointer">{isEn ? 'View skipped rows' : 'Xem các dòng bị bỏ qua'}</summary>
                     <ul className="mt-1.5 max-h-40 overflow-y-auto space-y-0.5">
                       {parsed.skipped.slice(0, 200).map((s) => (
                         <li key={s.row}>
-                          Dòng {s.row}: {s.reason}
+                          {isEn ? 'Row ' : 'Dòng '}{s.row}: {s.reason}
                         </li>
                       ))}
                     </ul>
@@ -684,7 +767,7 @@ export function ImportDataPage() {
                     </div>
                   ))}
                 </div>
-                {preview.stockChanges && <StockChangeSummary changes={preview.stockChanges} />}
+                {preview.stockChanges && <StockChangeSummary changes={preview.stockChanges} isEn={isEn} />}
                 {preview.issues.length > 0 && (
                   <ul className="max-h-56 overflow-y-auto border border-[#E5E7EB] rounded-lg divide-y divide-[#E5E7EB] text-[13px]">
                     {preview.issues.slice(0, 100).map((issue, i) => (
@@ -753,17 +836,21 @@ export function ImportDataPage() {
                     sourceId === s.id ? 'bg-[#3B82F6] border-[#3B82F6] text-white' : 'border-[#E5E7EB] text-[#475569] hover:bg-slate-50'
                   }`}
                 >
-                  {s.name}
+                  {isEn && s.nameEn ? s.nameEn : s.name}
                 </button>
               ))}
             </div>
             <ol className="mt-3 space-y-1.5 text-[13px] text-[#475569] list-decimal pl-4">
-              {source[kind].map((line) => (
+              {((isEn && source[`${kind}_EN`]) || source[kind]).map((line) => (
                 <li key={line}>{line}</li>
               ))}
               <li>{isEn ? 'Upload the exported file in Step 2.' : 'Tải file vừa xuất lên ở bước 2.'}</li>
             </ol>
-            {source.note && <p className="mt-3 text-[12px] text-[#475569] bg-slate-50 border border-[#E5E7EB] rounded-lg p-2.5">{source.note}</p>}
+            {((isEn && source.noteEn) || source.note) && (
+              <p className="mt-3 text-[12px] text-[#475569] bg-slate-50 border border-[#E5E7EB] rounded-lg p-2.5">
+                {isEn && source.noteEn ? source.noteEn : source.note}
+              </p>
+            )}
             <p className="mt-3 text-[12px] text-[#94A3B8]">
               {isEn ? 'Menu names may vary by software version. Columns are auto-mapped by name.' : 'Tên menu có thể khác tùy phiên bản. Hệ thống tự nhận diện cột theo tên nên không cần sửa file.'}
             </p>

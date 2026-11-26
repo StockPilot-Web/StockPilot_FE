@@ -10,6 +10,7 @@ import { useAuthStore } from '../../components/store/authStore';
 import { useTranslation } from '../../i18n/useTranslation';
 import { useToast } from '../../components/common/Toast';
 import { cn } from '../../components/lib/utils';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 export function StaffPage() {
   const { user } = useAuthStore();
@@ -19,7 +20,7 @@ export function StaffPage() {
 
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { draft: searchDraft, query: searchQuery, setDraft: setSearchDraft, apply: applySearch, clear: clearSearch } = useEnterSearch();
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'locked'
   const [roleFilter, setRoleFilter] = useState('all'); // 'all' | 'SHOP_OWNER' | 'STAFF'
 
@@ -593,14 +594,15 @@ export function StaffPage() {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  value={searchDraft}
+                  onChange={(e) => setSearchDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); setCurrentPage(1); } }}
                   placeholder={isEn ? 'Search name, email, phone...' : 'Tìm theo tên, email, SĐT...'}
                   className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-normal"
                 />
-                {searchQuery && (
+                {searchDraft && (
                   <button
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => { clearSearch(); setCurrentPage(1); }}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
                   >
                     <X className="w-3 h-3" />

@@ -11,6 +11,7 @@ import { useAuthStore } from '../../store/authStore';
 import { canViewCostPrice, normalizeRole } from '../../config/permissions.config';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../i18n/useTranslation';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 /* ─────────────────────────── helpers ─────────────────────────── */
 function fmtVND(n) {
@@ -155,7 +156,7 @@ export function InventoryPage() {
   const [tab, setTab] = useState('balances');
 
   /* search / filter */
-  const [search, setSearch] = useState('');
+  const { draft: searchDraft, query: search, setDraft: setSearchDraft, apply: applySearch } = useEnterSearch();
   const [stockFilter, setStockFilter] = useState('ALL');
 
   /* modal: which one open + loading state */
@@ -432,7 +433,7 @@ export function InventoryPage() {
             </div>
             <div className="inv-search-wrap" style={{ width: 240 }}>
               <Search className="inv-search-icon" />
-              <input className="inv-search-input" placeholder={isEn ? "Search product, SKU..." : "Tìm sản phẩm, mã SP..."} value={search} onChange={e => setSearch(e.target.value)} />
+              <input className="inv-search-input" placeholder={isEn ? "Search product, SKU..." : "Tìm sản phẩm, mã SP..."} value={searchDraft} onChange={e => setSearchDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }} title={isEn ? 'Press Enter to search' : 'Nhấn Enter để tìm kiếm'} />
             </div>
           </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, ShieldAlert, ShieldCheck, XCircle,
-  RefreshCw, Bot, Search, Filter, X, Check, Eye, Clock,
+  RefreshCw, Bot, Search, Filter, X, Check, CheckCircle2, Eye, Clock,
   Package, TrendingDown, Zap, Archive, BarChart3,
   Bell, BellOff, Activity, AlertCircle, Boxes, Loader2,
 } from 'lucide-react';
@@ -11,6 +11,7 @@ import { useToast } from '../../components/common/Toast';
 import { useTranslation } from '../../i18n/useTranslation';
 import { useAuthStore } from '../../components/store/authStore';
 import { canResolveAlerts, canRunDecisionEngine, canUseAiAssistant } from '../../config/permissions.config';
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 /* ═══ HELPERS ════════════════════════════════════════════════════ */
 const TYPE_META = {
@@ -94,20 +95,56 @@ function cleanAlertText(str, isEn) {
   if (!str) return '';
   let res = String(str)
     .replace(/\bSKU\s+SP/gi, 'SP')
-    .replace(/\bSKU\s+/gi, 'SP ')
-    .replace(/\(Z-Score:\s*([^)]+)\)/gi, isEn ? '(Z-Score std dev: $1)' : '(Độ lệch chuẩn Z: $1)');
+    .replace(/\bSKU\s+/gi, 'SP ');
+
   if (isEn) {
     res = res
-      .replace(/^(Cảnh báo hết hàng|Hết hàng):\s*/i, 'Out of Stock: ')
-      .replace(/^(Cảnh báo thừa hàng|Thừa hàng):\s*/i, 'Overstock Alert: ')
-      .replace(/^(Cảnh báo tồn kho thấp|Tồn kho thấp|Tồn thấp):\s*/i, 'Low Stock Alert: ')
-      .replace(/^(Cảnh báo bán chậm|Bán chậm):\s*/i, 'Slow-Moving Alert: ')
-      .replace(/^(Cảnh báo hàng ứ đọng|Hàng ứ đọng):\s*/i, 'Dead Stock Alert: ')
-      .replace(/^(Cảnh báo biến động nhu cầu|Biến động nhu cầu):\s*/i, 'Unusual Demand Alert: ')
-      .replace(/Sản phẩm (\S+)\s+hiện có sẵn\s+(\d+)\s+(?:sản phẩm|đơn vị)?\s*trong kho[\.\s]*Cần nhập hàng khẩn cấp\.?/i, 'Product $1 currently has $2 units in stock. Urgent replenishment required.')
-      .replace(/Sản phẩm (\S+)\s+có mức tồn kho vượt ngưỡng an toàn so với tốc độ tiêu thụ hiện tại\.?/i, 'Product $1 stock level exceeds safe threshold relative to current sales velocity.')
-      .replace(/Sản phẩm (\S+)\s+chỉ còn\s+(\d+)\s+đơn vị khả dụng,\s*dưới điểm đặt hàng\s+(\d+)\.?/i, 'Product $1 has only $2 available units left, below the reorder point of $3.')
-      .replace(/Sản phẩm (\S+)\s+đã hết hàng hoàn toàn trong kho\.?/i, 'Product $1 is completely out of stock in warehouse.');
+      // Prefixes
+      .replace(/^(?:Cảnh báo hết hàng|Hết hàng):\s*/i, 'Out of Stock: ')
+      .replace(/^(?:Cảnh báo thừa hàng|Thừa hàng):\s*/i, 'Overstock Alert: ')
+      .replace(/^(?:Cảnh báo tồn kho thấp|Tồn kho thấp|Tồn thấp):\s*/i, 'Low Stock Alert: ')
+      .replace(/^(?:Cảnh báo hàng bán chậm|Hàng bán chậm|Cảnh báo bán chậm|Bán chậm):\s*/i, 'Slow-Moving Alert: ')
+      .replace(/^(?:Hàng tồn kho ứ đọng|Cảnh báo hàng tồn kho ứ đọng|Cảnh báo hàng ứ đọng|Hàng ứ đọng|Hàng tồn ứ đọng):\s*/i, 'Dead Stock Alert: ')
+      .replace(/^(?:Cảnh báo biến động nhu cầu|Biến động nhu cầu|Cảnh báo nhu cầu bất thường|Nhu cầu bất thường):\s*/i, 'Unusual Demand: ')
+
+      // Out of stock descriptions
+      .replace(/^(?:Sản phẩm\s+)?(\S+)\s+(?:hiện\s+)?có sẵn\s+(\d+)\s*(?:sản phẩm|đơn vị)?\s*trong kho[\.\s]*Cần nhập hàng khẩn cấp\.?/i, 'Product $1 currently has $2 available units in stock. Urgent replenishment required.')
+      .replace(/^(?:Sản phẩm\s+)?(\S+)\s+đã hết hàng hoàn toàn trong kho\.?/i, 'Product $1 is completely out of stock in warehouse.')
+
+      // Unusual demand descriptions
+      .replace(/^(?:Sản phẩm\s+)?(\S+)\s+có biến động nhu cầu đột biến\s*\((?:Độ lệch chuẩn Z|Z-Score):\s*([^)]+)\)\.?/i, 'Product $1 has unusual demand fluctuation (Z-Score std dev: $2).')
+      .replace(/^(?:Sản phẩm\s+)?(\S+)\s+bất ngờ phát sinh lượt bán mới sau thời gian dài không có nhu cầu\.?/i, 'Product $1 unexpectedly had new sales after a long period of inactivity.')
+
+      // Low stock descriptions
+      .replace(/^(?:Sản phẩm\s+)?(\S+)\s+chỉ còn\s+(\d+)\s+đơn vị khả dụng,\s*dưới điểm đặt hàng\s+(\d+)\.?/i, 'Product $1 has only $2 available units left, below the reorder point of $3.')
+
+      // Overstock descriptions (compound describeOverstock)
+      .replace(/^(?:Sản phẩm\s+)?([^:]+):\s*(.+)$/i, (match, sku, body) => {
+        if (!/tồn khả dụng|đủ bán khoảng|sức bán/i.test(body)) return match;
+        let translated = body
+          .replace(/tồn khả dụng\s+(\d+)\s+vượt mức tối đa\s+(\d+)(?:\s*\(dư\s+(\d+)\))?/gi, 'available stock $1 exceeds maximum of $2 (surplus $3)')
+          .replace(/đủ bán khoảng\s+([\d\.]+)\s+ngày,\s*gấp\s+([\d\.]+)\s+lần mục tiêu\s+([\d\.]+)\s+ngày(?:\s*\(dư khoảng\s+([\d\.]+)\s+đơn vị\))?/gi, 'coverage for ~$1 days, $2x vs target of $3 days (~$4 surplus units)')
+          .replace(/sức bán 7 ngày gần đây chỉ bằng\s+([\d\.]+)%\s+trung bình 30 ngày/gi, 'recent 7-day sales velocity is only $1% of 30-day average');
+        return 'Product ' + sku + ': ' + translated;
+      })
+      .replace(/^(?:Sản phẩm\s+)?(\S+)\s+có mức tồn kho vượt ngưỡng an toàn so với tốc độ tiêu thụ hiện tại\.?/i, 'Product $1 stock level exceeds safe threshold relative to current sales velocity.')
+
+      // Slow moving descriptions
+      .replace(/^(?:Sản phẩm\s+)?(\S+)\s+không ghi nhận doanh số bán trong\s+(\d+|nhiều)\s+ngày\.?/i, (m, sku, days) => {
+        return days === 'nhiều'
+          ? 'Product ' + sku + ' has recorded no sales in recent days.'
+          : 'Product ' + sku + ' has recorded no sales in the past ' + days + ' days.';
+      })
+
+      // Dead stock descriptions
+      .replace(/^(?:Sản phẩm\s+)?(\S+)\s+không có giao dịch bán hàng trong\s+(\d+)\s+ngày qua[\.\s]*Cần xem xét giảm giá xả hàng\.?/i, 'Product $1 has had no sales transactions in the past $2 days. Consider discount clearance.')
+      .replace(/^(?:Sản phẩm\s+)?(\S+)\s+hoàn toàn không có giao dịch trong\s+(\d+)\s+ngày\.?/i, 'Product $1 has had zero transactions for $2 days.')
+
+      // Standalone Z-Score replace
+      .replace(/\(Độ lệch chuẩn Z:\s*([^)]+)\)/gi, '(Z-Score std dev: $1)')
+      .replace(/\(Z-Score:\s*([^)]+)\)/gi, '(Z-Score std dev: $1)');
+  } else {
+    res = res.replace(/\(Z-Score:\s*([^)]+)\)/gi, '(Độ lệch chuẩn Z: $1)');
   }
   return res;
 }
@@ -229,18 +266,16 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
 
   return (
     <div
-      onClick={() => onView(alert)}
       style={{
         borderRadius: 16,
         border: '1px solid ' + sevCfg.cardBorder,
         background: '#ffffff',
-        cursor: 'pointer',
         position: 'relative',
         overflow: 'hidden',
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         transition: 'all .2s',
       }}
-      className="hover:shadow-lg hover:-translate-y-0.5 group"
+      className="hover:shadow-md group"
     >
       {/* accent bar */}
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: sevCfg.accentBar, borderRadius: '16px 0 0 16px' }} />
@@ -282,7 +317,6 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
                 </span>
               )}
               <span className="flex items-center gap-1"><Clock style={{ width: 12, height: 12 }} />{fmtDate(alert.openedAt, isEn)}</span>
-              {conf > 0 && <span className="flex items-center gap-1"><Activity style={{ width: 12, height: 12 }} />{isEn ? 'Confidence: ' : 'Tin cậy: '}{Math.round(conf)}%</span>}
             </div>
           </div>
         </div>
@@ -295,8 +329,8 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={e => { e.stopPropagation(); onView(alert); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors hover:opacity-80"
-            style={{ background: '#eff6ff', color: '#2563eb', borderColor: '#bfdbfe' }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors hover:bg-slate-100"
+            style={{ background: '#ffffff', color: '#0f172a', borderColor: '#cbd5e1', cursor: 'pointer' }}
           >
             <Eye style={{ width: 13, height: 13 }} /> {isEn ? 'Details' : 'Chi tiết'}
           </button>
@@ -309,14 +343,13 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
               <Bell style={{ width: 13, height: 13 }} /> {isEn ? 'Acknowledge' : 'Tiếp nhận'}
             </button>
           )}
-          {onResolve && (
-            <button
-              onClick={e => { e.stopPropagation(); onResolve(alert.id); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors hover:opacity-90"
-              style={{ background: '#16a34a', color: '#fff' }}
+          {status === 'RESOLVED' && (
+            <span
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl"
+              style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1' }}
             >
               <Check style={{ width: 13, height: 13 }} /> {isEn ? 'Resolved' : 'Đã xử lý'}
-            </button>
+            </span>
           )}
         </div>
       </div>
@@ -451,12 +484,37 @@ function AlertDetailModal({ alert, onClose, onAcknowledge, onResolve, onAskAI, i
                 </div>
               ))}
             </div>
+            {status === 'RESOLVED' && (
+              <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+                  {isEn ? 'Resolution Summary' : 'Cách đã xử lý'}
+                </div>
+                <div style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
+                  {alert.reasonJson?.lifecycle?.resolvedBy === 'ENGINE'
+                    ? (isEn
+                        ? 'Automatically closed by the system after stock returned to a safe level.'
+                        : 'Hệ thống tự động đóng sau khi tồn kho quay về ngưỡng an toàn.')
+                    : (isEn
+                        ? 'Manually confirmed as resolved by the store owner.'
+                        : 'Chủ cửa hàng đã xác nhận xử lý thủ công.')}
+                </div>
+                {alert.reasonJson?.lifecycle?.ackNote && (
+                  <div style={{ fontSize: 11, color: '#15803d', marginTop: 4 }}>
+                    {isEn ? 'Note: ' : 'Ghi chú: '}{alert.reasonJson.lifecycle.ackNote}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* footer */}
         <div style={{ padding: '14px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          {onAskAI ? (
+          {status === 'RESOLVED' ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#15803d' }}>
+              <CheckCircle2 style={{ width: 15, height: 15 }} /> {isEn ? 'This alert has been resolved' : 'Cảnh báo này đã được xử lý'}
+            </span>
+          ) : onAskAI ? (
           <button
             onClick={() => onAskAI(alert)}
             className="flex items-center gap-2 transition-colors hover:bg-violet-100"
@@ -479,7 +537,15 @@ function AlertDetailModal({ alert, onClose, onAcknowledge, onResolve, onAskAI, i
                 <Bell style={{ width: 13, height: 13 }} /> {isEn ? 'Acknowledge' : 'Tiếp nhận'}
               </button>
             )}
-            {onResolve && (
+            {status === 'RESOLVED' ? (
+              <button
+                onClick={onClose}
+                className="flex items-center gap-1.5 transition-colors hover:bg-slate-200"
+                style={{ padding: '8px 16px', fontSize: 12, fontWeight: 700, borderRadius: 12, background: '#e2e8f0', color: '#0f172a', border: 'none', cursor: 'pointer' }}
+              >
+                {isEn ? 'Close' : 'Đóng'}
+              </button>
+            ) : onResolve && (
             <button
               onClick={() => { onResolve(alert.id); onClose(); }}
               className="flex items-center gap-1.5 transition-colors hover:opacity-90"
@@ -511,24 +577,46 @@ export function AlertsPage() {
   const [activeTab, setActiveTab] = useState('ALL');
   const [selType, setSelType] = useState('ALL');
   const [selSev, setSelSev] = useState('ALL');
-  const [search, setSearch] = useState('');
+  const { draft: searchDraft, query: search, setDraft: setSearchDraft, apply: applySearch, clear: clearSearch } = useEnterSearch();
   const [modalAlert, setModalAlert] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchAlerts();
+
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchAlerts();
+      }
+    }, 8000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchAlerts();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [fetchAlerts]);
 
   const critCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && a.severity === 'CRITICAL').length, [alerts]);
   const warnCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && a.severity === 'WARNING').length, [alerts]);
+  const infoCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && (a.severity || '').toUpperCase() === 'INFO').length, [alerts]);
   const openCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status)).length, [alerts]);
   const ackCount = useMemo(() => alerts.filter(a => a.status === 'ACKNOWLEDGED').length, [alerts]);
+  const resolvedCount = useMemo(() => alerts.filter(a => (a.status || '').toUpperCase() === 'RESOLVED').length, [alerts]);
 
   const filtered = useMemo(() => {
     return alerts.filter(a => {
       const st = (a.status || '').toUpperCase();
+      if (activeTab === 'ALL' && st === 'RESOLVED') return false;
       if (activeTab === 'OPEN' && st !== 'OPEN') return false;
       if (activeTab === 'ACKNOWLEDGED' && st !== 'ACKNOWLEDGED') return false;
+      if (activeTab === 'RESOLVED' && st !== 'RESOLVED') return false;
       if (selType !== 'ALL' && a.type !== selType) return false;
       if (selSev !== 'ALL' && (a.severity || '').toUpperCase() !== selSev) return false;
       if (search.trim()) {
@@ -609,7 +697,7 @@ export function AlertsPage() {
     });
   }, [navigate, isEn]);
 
-  const clearFilters = () => { setSelType('ALL'); setSelSev('ALL'); setSearch(''); };
+  const clearFilters = () => { setSelType('ALL'); setSelSev('ALL'); clearSearch(); };
 
   const TYPE_TABS = [
     { key: 'ALL', label: isEn ? 'All' : 'Tất cả' },
@@ -801,22 +889,22 @@ export function AlertsPage() {
           border="#fde68a"
         />
         <KpiCard
-          icon={Bell}
-          label={isEn ? 'Open' : 'Đang mở'}
-          value={openCount}
-          sub={isEn ? 'Pending' : 'Chưa xử lý'}
-          bg="#fff7ed"
-          text="#ea580c"
-          border="#fed7aa"
-        />
-        <KpiCard
-          icon={BellOff}
-          label={isEn ? 'Acknowledged' : 'Đang theo dõi'}
-          value={ackCount}
-          sub={isEn ? 'Tracking' : 'Đã tiếp nhận'}
+          icon={AlertCircle}
+          label={isEn ? 'Info' : 'Thông tin'}
+          value={infoCount}
+          sub={isEn ? 'Notice' : 'Lưu ý'}
           bg="#eff6ff"
           text="#2563eb"
           border="#bfdbfe"
+        />
+        <KpiCard
+          icon={CheckCircle2}
+          label={isEn ? 'Resolved' : 'Đã xử lý'}
+          value={resolvedCount}
+          sub={isEn ? 'Completed' : 'Hoàn tất'}
+          bg="#f0fdf4"
+          text="#16a34a"
+          border="#bbf7d0"
         />
       </div>
 
@@ -824,9 +912,9 @@ export function AlertsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-4">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           {[
-            { key: 'ALL', label: isEn ? 'All' : 'Tất cả', count: alerts.length },
+            { key: 'ALL', label: isEn ? 'All Active' : 'Tất cả', count: openCount + ackCount },
             { key: 'OPEN', label: isEn ? 'Pending' : 'Chưa xử lý', count: openCount },
-            { key: 'ACKNOWLEDGED', label: isEn ? 'Acknowledged' : 'Đang theo dõi', count: ackCount },
+            { key: 'RESOLVED', label: isEn ? 'Resolved' : 'Đã xử lý', count: resolvedCount },
           ].map(tab => (
             <button
               key={tab.key}
@@ -870,13 +958,14 @@ export function AlertsPage() {
           <input
             type="text"
             placeholder={isEn ? "Search product, SKU, risk type..." : "Tìm kiếm tên SP, mã SP, loại rủi ro..."}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={searchDraft}
+            onChange={e => setSearchDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
             style={{ width: '100%', paddingLeft: 34, paddingRight: 32, paddingTop: 8, paddingBottom: 8, fontSize: 13, borderRadius: 12, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
           />
-          {search && (
+          {searchDraft && (
             <button
-              onClick={() => setSearch('')}
+              onClick={clearSearch}
               style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }}
             >
               <X style={{ width: 14, height: 14 }} />
@@ -905,15 +994,6 @@ export function AlertsPage() {
         {isEn ? 'Showing ' : 'Đang hiển thị '}
         <strong style={{ color: '#0f172a' }}>{filtered.length}</strong>
         {isEn ? ' alerts' : ' cảnh báo'}
-        {filtered.length !== alerts.length && (
-          <>
-            {' '}
-            &middot;{' '}
-            <button onClick={clearFilters} style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}>
-              {isEn ? 'Clear filters' : 'Xóa bộ lọc'}
-            </button>
-          </>
-        )}
       </p>
 
       {/* ALERT LIST */}
@@ -972,7 +1052,7 @@ export function AlertsPage() {
               key={a.id}
               alert={a}
               onAcknowledge={handleAck}
-              onResolve={canResolve ? handleResolve : undefined}
+              onResolve={canResolve && activeTab !== 'ALL' ? handleResolve : undefined}
               onView={setModalAlert}
               isEn={isEn}
             />

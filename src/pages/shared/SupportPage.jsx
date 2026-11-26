@@ -52,13 +52,17 @@ const getCategoryLabel = (cat, isEn) => {
   if (!isEn) return SUPPORT_CATEGORY_LABELS[cat] || cat;
   const enCat = {
     DATA_IMPORT: 'Data Import / Migration',
+    PAYMENT: 'Payments, PayOS',
+    ACCOUNT: 'Account & Login',
+    BUG: 'Software Bug Report',
+    HOW_TO: 'User Guide / How-To',
+    OTHER: 'General Support',
     INVENTORY_SYNC: 'Stock & Inventory',
     PAYMENT_PAYOS: 'PayOS / VietQR Payments',
     PAYMENT_MOMO: 'MoMo Wallet Payments',
     FEATURE_REQUEST: 'Feature Suggestion',
     BUG_REPORT: 'Bug Report / Error',
     ACCOUNT_BILLING: 'Account & Subscription',
-    OTHER: 'General Support',
   };
   return enCat[cat] || SUPPORT_CATEGORY_LABELS[cat] || cat;
 };

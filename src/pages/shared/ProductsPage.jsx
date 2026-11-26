@@ -15,6 +15,7 @@ import { useToast } from "../../components/common/Toast";
 import { useTranslation } from "../../i18n/useTranslation";
 import { uploadImageToCloudinary, uploadBase64ToCloudinary } from "../../services/uploadService";
 import { RedLightningLogo } from "../../components/common/RedLightningLogo";
+import { useEnterSearch } from '../../hooks/useEnterSearch';
 
 function safeNum(val) {
   if (val === null || val === undefined) return 0;
@@ -1220,7 +1221,7 @@ export function ProductsPage() {
       setSearchParams(next, { replace: true });
     }
   };
-  const [searchQuery, setSearchQuery] = useState("");
+  const { draft: searchDraft, query: searchQuery, setDraft: setSearchDraft, apply: applySearch, clear: clearSearch } = useEnterSearch();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [statusTab, setStatusTab] = useState("all");
   const [sortBy, setSortBy] = useState("code_asc");
@@ -1520,12 +1521,13 @@ export function ProductsPage() {
           <input
             className="pp-search-input"
             type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applySearch(); } }}
             placeholder={t('searchProductInput', 'Tìm theo tên, mã SP, mã vạch...')}
           />
-          {searchQuery && (
-            <button className="pp-search-clear" onClick={() => setSearchQuery("")}>
+          {searchDraft && (
+            <button className="pp-search-clear" onClick={clearSearch} type="button">
               <X style={{ width: 14, height: 14 }} />
             </button>
           )}
@@ -1586,7 +1588,7 @@ export function ProductsPage() {
               cursor: "pointer",
             }}
             onClick={() => {
-              setSearchQuery("");
+              clearSearch();
               setSelectedCategory("all");
               setStatusTab("all");
             }}
