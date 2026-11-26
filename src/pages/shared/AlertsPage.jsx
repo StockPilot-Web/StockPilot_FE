@@ -578,12 +578,15 @@ export function AlertsPage() {
   const warnCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && a.severity === 'WARNING').length, [alerts]);
   const openCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status)).length, [alerts]);
   const ackCount = useMemo(() => alerts.filter(a => a.status === 'ACKNOWLEDGED').length, [alerts]);
+  const resolvedCount = useMemo(() => alerts.filter(a => (a.status || '').toUpperCase() === 'RESOLVED').length, [alerts]);
 
   const filtered = useMemo(() => {
     return alerts.filter(a => {
       const st = (a.status || '').toUpperCase();
+      if (activeTab === 'ALL' && st === 'RESOLVED') return false;
       if (activeTab === 'OPEN' && st !== 'OPEN') return false;
       if (activeTab === 'ACKNOWLEDGED' && st !== 'ACKNOWLEDGED') return false;
+      if (activeTab === 'RESOLVED' && st !== 'RESOLVED') return false;
       if (selType !== 'ALL' && a.type !== selType) return false;
       if (selSev !== 'ALL' && (a.severity || '').toUpperCase() !== selSev) return false;
       if (search.trim()) {
@@ -879,9 +882,10 @@ export function AlertsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-4">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
           {[
-            { key: 'ALL', label: isEn ? 'All' : 'Tất cả', count: alerts.length },
+            { key: 'ALL', label: isEn ? 'All Active' : 'Tất cả', count: openCount + ackCount },
             { key: 'OPEN', label: isEn ? 'Pending' : 'Chưa xử lý', count: openCount },
             { key: 'ACKNOWLEDGED', label: isEn ? 'Acknowledged' : 'Đang theo dõi', count: ackCount },
+            { key: 'RESOLVED', label: isEn ? 'Resolved' : 'Đã xử lý', count: resolvedCount },
           ].map(tab => (
             <button
               key={tab.key}
