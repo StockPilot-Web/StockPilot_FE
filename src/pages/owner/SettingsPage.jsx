@@ -12,6 +12,7 @@ import {
 import { useToast } from '../../components/common/Toast';
 import { useAuthStore } from '../../components/store/authStore';
 import { useTranslation } from '../../i18n/useTranslation';
+import { StockPilotAILogo } from '../../components/common/StockPilotAILogo';
 import {
   apiGetDecisionConfig,
   apiUpdateDecisionConfig,
@@ -686,7 +687,7 @@ export function SettingsPage() {
               <div className="st-card" style={{ padding: 26 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 10 }}>
                   <div>
-                    <div className="st-section-title"><Sparkles size={16} color="#7c3aed" /> {isEn ? 'AI Decision Engine Parameters' : 'Tham số AI Decision Engine'}</div>
+                    <div className="st-section-title"><StockPilotAILogo size="xs" /> {isEn ? 'AI Decision Engine Parameters' : 'Tham số AI Decision Engine'}</div>
                     <div className="st-section-desc">{isEn ? 'Fine-tune threshold levels affecting inventory risk alerts and pricing algorithms.' : 'Điều chỉnh các ngưỡng ảnh hưởng trực tiếp đến cảnh báo tồn kho và đề xuất giá bán.'}</div>
                   </div>
                   <button type="button" onClick={handleResetEngine} className="st-btn-secondary" style={{ fontSize: 12, padding: '7px 14px' }}>
@@ -808,7 +809,7 @@ export function SettingsPage() {
                     key: 'aiPriceSuggestion',
                     label: isEn ? 'AI Pricing Suggestions' : 'Gợi ý giá mới từ AI Decision Engine',
                     desc: isEn ? 'Daily notification when new price recommendations are ready for review.' : 'Thông báo hàng ngày khi có đề xuất giá mới cần phê duyệt.',
-                    icon: <Sparkles size={16} color="#7c3aed" />,
+                    icon: <StockPilotAILogo size="xs" />,
                     bg: '#faf5ff',
                     border: '#c4b5fd'
                   },

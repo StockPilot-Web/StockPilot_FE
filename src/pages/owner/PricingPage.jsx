@@ -11,6 +11,7 @@ import { useToast } from '../../components/common/Toast';
 import { useTranslation } from '../../i18n/useTranslation';
 import { formatCategoryName } from '../../components/store/productStore';
 import { useEnterSearch } from '../../hooks/useEnterSearch';
+import { StockPilotAILogo } from '../../components/common/StockPilotAILogo';
 
 function formatVND(n) {
   return Number(n || 0).toLocaleString('vi-VN') + ' đ';
@@ -546,7 +547,7 @@ export function PricingPage() {
                       <h3 className="text-base font-bold text-foreground">{item.productName}</h3>
 
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+                        <StockPilotAILogo size="xs" />
                         <span>{formatPricingReason(item.reasonSummary, isEn)}</span>
                       </p>
                     </div>
