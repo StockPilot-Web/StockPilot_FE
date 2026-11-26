@@ -1149,7 +1149,7 @@ function ProductCard({ prod, onZoom, onEdit, onDelete, onDetail }) {
             >
               <Pencil style={{ width: 13, height: 13 }} />
             </button>
-            {canDelete && (
+            {canDelete && prod.status !== 'inactive' && prod.isActive !== false && (
               <button
                 className="pp-card-btn-icon trash"
                 onClick={(e) => {
@@ -1720,7 +1720,7 @@ export function ProductsPage() {
                           >
                             <Pencil style={{ width: 15, height: 15 }} />
                           </button>
-                          {canDelete && (
+                          {canDelete && prod.status !== 'inactive' && prod.isActive !== false && (
                             <button
                               className="pp-tbl-btn trash"
                               onClick={() => setDeleteConfirmId(prod.id)}
