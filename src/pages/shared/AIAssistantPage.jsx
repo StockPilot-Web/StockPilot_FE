@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Bot, Plus, Trash2, MessageSquare, Sparkles,
   Mic, MicOff, Volume2, VolumeX,
@@ -419,6 +419,8 @@ export function AIAssistantPage() {
   // Chống gửi trùng lặp câu hỏi (duplicate voice submission guard)
   const lastSentTextRef = useRef('');
   const lastSentTimeRef = useRef(0);
+  const location = useLocation();
+  const handledPresetRef = useRef(null);
 
   const handleSendMessage = (textToSend) => {
     const text = (textToSend ?? inputMessage).trim();
@@ -446,6 +448,16 @@ export function AIAssistantPage() {
     setInputMessage('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
+
+  // Tự động gửi câu hỏi nếu được điều hướng từ trang Cảnh báo ("Hỏi Pilot AI về cảnh báo này")
+  useEffect(() => {
+    const preset = location.state?.presetQuery;
+    if (preset && typeof preset === 'string' && handledPresetRef.current !== preset) {
+      handledPresetRef.current = preset;
+      handleSendMessage(preset);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   const handleRetry = (turnId, text) => {
     stick();
