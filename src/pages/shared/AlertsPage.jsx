@@ -266,18 +266,16 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
 
   return (
     <div
-      onClick={() => onView(alert)}
       style={{
         borderRadius: 16,
         border: '1px solid ' + sevCfg.cardBorder,
         background: '#ffffff',
-        cursor: 'pointer',
         position: 'relative',
         overflow: 'hidden',
         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         transition: 'all .2s',
       }}
-      className="hover:shadow-lg hover:-translate-y-0.5 group"
+      className="hover:shadow-md group"
     >
       {/* accent bar */}
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: sevCfg.accentBar, borderRadius: '16px 0 0 16px' }} />
@@ -332,8 +330,8 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={e => { e.stopPropagation(); onView(alert); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors hover:opacity-80"
-            style={{ background: '#eff6ff', color: '#2563eb', borderColor: '#bfdbfe' }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors hover:bg-slate-100"
+            style={{ background: '#ffffff', color: '#0f172a', borderColor: '#cbd5e1', cursor: 'pointer' }}
           >
             <Eye style={{ width: 13, height: 13 }} /> {isEn ? 'Details' : 'Chi tiết'}
           </button>
@@ -349,7 +347,7 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
           {status === 'RESOLVED' ? (
             <span
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl"
-              style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0' }}
+              style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1' }}
             >
               <Check style={{ width: 13, height: 13 }} /> {isEn ? 'Resolved' : 'Đã xử lý'}
             </span>
@@ -1006,15 +1004,6 @@ export function AlertsPage() {
         {isEn ? 'Showing ' : 'Đang hiển thị '}
         <strong style={{ color: '#0f172a' }}>{filtered.length}</strong>
         {isEn ? ' alerts' : ' cảnh báo'}
-        {filtered.length !== alerts.length && (
-          <>
-            {' '}
-            &middot;{' '}
-            <button onClick={clearFilters} style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}>
-              {isEn ? 'Clear filters' : 'Xóa bộ lọc'}
-            </button>
-          </>
-        )}
       </p>
 
       {/* ALERT LIST */}
