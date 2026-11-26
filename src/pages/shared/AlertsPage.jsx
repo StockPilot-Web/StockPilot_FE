@@ -317,7 +317,6 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
                 </span>
               )}
               <span className="flex items-center gap-1"><Clock style={{ width: 12, height: 12 }} />{fmtDate(alert.openedAt, isEn)}</span>
-              {conf > 0 && <span className="flex items-center gap-1"><Activity style={{ width: 12, height: 12 }} />{isEn ? 'Confidence: ' : 'Tin cậy: '}{Math.round(conf)}%</span>}
             </div>
           </div>
         </div>
@@ -344,23 +343,13 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
               <Bell style={{ width: 13, height: 13 }} /> {isEn ? 'Acknowledge' : 'Tiếp nhận'}
             </button>
           )}
-          {status === 'RESOLVED' ? (
+          {status === 'RESOLVED' && (
             <span
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl"
               style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1' }}
             >
               <Check style={{ width: 13, height: 13 }} /> {isEn ? 'Resolved' : 'Đã xử lý'}
             </span>
-          ) : (
-            onResolve && (
-              <button
-                onClick={e => { e.stopPropagation(); onResolve(alert.id); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors hover:opacity-90"
-                style={{ background: '#16a34a', color: '#fff' }}
-              >
-                <Check style={{ width: 13, height: 13 }} /> {isEn ? 'Resolved' : 'Đã xử lý'}
-              </button>
-            )
           )}
         </div>
       </div>
