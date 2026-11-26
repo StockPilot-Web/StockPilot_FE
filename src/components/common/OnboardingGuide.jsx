@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
-  AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Boxes, CheckCircle2, FileUp,
+  AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Boxes, FileUp,
   LayoutDashboard, LifeBuoy, Package, Settings, ShieldCheck, ShoppingBag,
   ShoppingCart, Store, Users, X,
 } from 'lucide-react';
@@ -85,6 +85,17 @@ function writeCompleted(key) {
   }
 }
 
+function getTargetSelector(key) {
+  const paths = {
+    dashboard: '/dashboard', products: '/products', import: '/import', pos: '/pos', orders: '/orders',
+    inventory: '/inventory', decision: '/alerts', settings: '/settings', support: '/support',
+    users: '/admin/users', stores: '/admin/stores', leads: '/admin/leads', system: '/admin/system',
+    ops: '/admin/ops', security: '/admin/security',
+  };
+  const path = paths[key];
+  return path ? `a[href="${path}"]` : null;
+}
+
 export function OnboardingGuide() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -96,7 +107,10 @@ export function OnboardingGuide() {
   const storageKey = user ? getStorageKey(user, role) : '';
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+  const [targetRect, setTargetRect] = useState(null);
   const closeRef = useRef(null);
+  const current = steps[stepIndex];
+  const targetSelector = getTargetSelector(current?.[0]);
 
   useEffect(() => {
     if (!user || !storageKey) return;
@@ -131,9 +145,40 @@ export function OnboardingGuide() {
     };
   }, [open, storageKey]);
 
+  useLayoutEffect(() => {
+    if (!open || !targetSelector) {
+      setTargetRect(null);
+      return undefined;
+    }
+
+    const target = document.querySelector(targetSelector);
+    if (!target) {
+      setTargetRect(null);
+      return undefined;
+    }
+
+    target.scrollIntoView?.({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    let frame = window.requestAnimationFrame(() => {});
+    const measure = () => {
+      const rect = target.getBoundingClientRect();
+      setTargetRect({ top: rect.top, left: rect.left, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height });
+    };
+    const scheduleMeasure = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(measure);
+    };
+    scheduleMeasure();
+    window.addEventListener('resize', scheduleMeasure);
+    window.addEventListener('scroll', scheduleMeasure, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', scheduleMeasure);
+      window.removeEventListener('scroll', scheduleMeasure, true);
+    };
+  }, [open, targetSelector]);
+
   if (!open || !user || steps.length === 0) return null;
 
-  const current = steps[stepIndex];
   const [stepKey, Icon, title, description, path, actionLabel] = current;
   const finish = () => {
     writeCompleted(storageKey);
@@ -151,82 +196,89 @@ export function OnboardingGuide() {
     next();
   };
 
+  const isSmallScreen = window.innerWidth < 768;
+  const popoverWidth = 360;
+  const popoverStyle = isSmallScreen
+    ? { left: 16, right: 16, bottom: 16 }
+    : {
+        width: popoverWidth,
+        top: targetRect ? Math.min(Math.max(16, targetRect.top - 10), window.innerHeight - 400) : '50%',
+        left: targetRect && targetRect.right + 20 + popoverWidth <= window.innerWidth - 16
+          ? targetRect.right + 20
+          : targetRect
+          ? Math.max(16, targetRect.left - popoverWidth - 20)
+          : '50%',
+        transform: targetRect ? undefined : 'translate(-50%, -50%)',
+      };
+
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-[2px]" role="presentation">
+    <div className="fixed inset-0 z-[80]" role="presentation">
+      {!targetRect && <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]" />}
+      {targetRect && (
+        <div
+          className="pointer-events-none fixed rounded-lg border-2 border-blue-500 ring-4 ring-blue-400/30 transition-all duration-200"
+          style={{
+            top: Math.max(4, targetRect.top - 8),
+            left: Math.max(4, targetRect.left - 8),
+            width: targetRect.width + 16,
+            height: targetRect.height + 16,
+            boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.62)',
+          }}
+          aria-hidden="true"
+        />
+      )}
       <div
-        className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className="fixed overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        style={popoverStyle}
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-title"
         aria-describedby="onboarding-description"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-white px-5 py-5 sm:px-7">
-          <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
-              <CheckCircle2 className="h-6 w-6" />
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-white px-5 py-4">
+          <div className="flex min-w-0 gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+              <Icon className="h-5 w-5" aria-hidden="true" />
             </div>
-            <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-blue-600">
+            <div className="min-w-0">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-blue-600">
                 {isEn ? `Step ${stepIndex + 1} of ${steps.length}` : `Bước ${stepIndex + 1}/${steps.length}`}
               </p>
-              <h2 id="onboarding-title" className="text-lg font-bold text-slate-900">
-                {isEn ? content.titleEn : content.title}
+              <h2 id="onboarding-title" className="text-base font-bold text-slate-900">
+                {isEn ? getEnglishTitle(stepKey, title) : title}
               </h2>
-              <p id="onboarding-description" className="mt-1 text-sm leading-5 text-slate-600">
-                {isEn ? content.subtitleEn : content.subtitle}
-              </p>
             </div>
           </div>
-          <button
-            ref={closeRef}
-            type="button"
-            onClick={finish}
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label={isEn ? 'Close onboarding' : 'Đóng hướng dẫn'}
-            title={isEn ? 'Close onboarding' : 'Đóng hướng dẫn'}
-          >
-            <X className="h-5 w-5" />
+          <button ref={closeRef} type="button" onClick={finish} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={isEn ? 'Close onboarding' : 'Đóng hướng dẫn'} title={isEn ? 'Close onboarding' : 'Đóng hướng dẫn'}>
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="px-5 py-6 sm:px-7">
-          <div className="mb-6 flex items-center gap-1.5" aria-label={isEn ? 'Onboarding progress' : 'Tiến độ hướng dẫn'}>
+        <div className="px-5 py-4">
+          <div className="mb-4 flex items-center gap-1" aria-label={isEn ? 'Onboarding progress' : 'Tiến độ hướng dẫn'}>
             {steps.map((item, index) => (
-              <button
-                key={item[0]}
-                type="button"
-                onClick={() => setStepIndex(index)}
-                className={`h-1.5 flex-1 rounded-full transition ${index <= stepIndex ? 'bg-blue-600' : 'bg-slate-200'}`}
-                aria-label={isEn ? `Go to step ${index + 1}` : `Đến bước ${index + 1}`}
-              />
+              <button key={item[0]} type="button" onClick={() => setStepIndex(index)} className={`h-1.5 flex-1 rounded-full transition ${index <= stepIndex ? 'bg-blue-600' : 'bg-slate-200'}`} aria-label={isEn ? `Go to step ${index + 1}` : `Đến bước ${index + 1}`} />
             ))}
           </div>
-
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-              <Icon className="h-8 w-8" aria-hidden="true" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-xl font-bold text-slate-900">{isEn ? getEnglishTitle(stepKey, title) : title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{isEn ? getEnglishDescription(stepKey, description) : description}</p>
-              <button type="button" onClick={openCurrentPage} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                {isEn ? getEnglishAction(stepKey, actionLabel) : actionLabel}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <p id="onboarding-description" className="text-sm leading-6 text-slate-600">
+            {isEn ? getEnglishDescription(stepKey, description) : description}
+          </p>
+          <button type="button" onClick={openCurrentPage} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {isEn ? getEnglishAction(stepKey, actionLabel) : actionLabel}
+            <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
 
-        <div className="flex flex-col-reverse gap-3 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <button type="button" onClick={finish} className="text-left text-sm font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-center">
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-3">
+          <button type="button" onClick={finish} className="text-sm font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500">
             {isEn ? 'Skip for now' : 'Bỏ qua, xem sau'}
           </button>
-          <div className="flex items-center justify-end gap-2">
-            <button type="button" onClick={() => setStepIndex((value) => Math.max(0, value - 1))} disabled={stepIndex === 0} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setStepIndex((value) => Math.max(0, value - 1))} disabled={stepIndex === 0} className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <ArrowLeft className="h-4 w-4" />
               {isEn ? 'Back' : 'Quay lại'}
             </button>
-            <button type="button" onClick={next} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button type="button" onClick={next} className="inline-flex min-h-10 items-center gap-1 rounded-lg bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
               {stepIndex === steps.length - 1 ? (isEn ? 'Finish' : 'Hoàn tất') : (isEn ? 'Next' : 'Tiếp theo')}
               <ArrowRight className="h-4 w-4" />
             </button>
