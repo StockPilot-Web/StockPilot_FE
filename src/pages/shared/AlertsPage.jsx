@@ -330,8 +330,8 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={e => { e.stopPropagation(); onView(alert); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors hover:opacity-80"
-            style={{ background: '#eff6ff', color: '#2563eb', borderColor: '#bfdbfe' }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors hover:bg-slate-100"
+            style={{ background: '#ffffff', color: '#0f172a', borderColor: '#cbd5e1', cursor: 'pointer' }}
           >
             <Eye style={{ width: 13, height: 13 }} /> {isEn ? 'Details' : 'Chi tiết'}
           </button>
@@ -347,7 +347,7 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
           {status === 'RESOLVED' ? (
             <span
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl"
-              style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0' }}
+              style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1' }}
             >
               <Check style={{ width: 13, height: 13 }} /> {isEn ? 'Resolved' : 'Đã xử lý'}
             </span>
