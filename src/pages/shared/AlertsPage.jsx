@@ -334,15 +334,6 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
           >
             <Eye style={{ width: 13, height: 13 }} /> {isEn ? 'Details' : 'Chi tiết'}
           </button>
-          {status === 'OPEN' && (
-            <button
-              onClick={e => { e.stopPropagation(); onAcknowledge(alert.id); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-colors hover:bg-slate-100"
-              style={{ background: '#ffffff', borderColor: '#cbd5e1', color: '#0f172a' }}
-            >
-              <Bell style={{ width: 13, height: 13 }} /> {isEn ? 'Acknowledge' : 'Tiếp nhận'}
-            </button>
-          )}
           {status === 'RESOLVED' && (
             <span
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl"
@@ -528,15 +519,6 @@ function AlertDetailModal({ alert, onClose, onAcknowledge, onResolve, onAskAI, i
             </p>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {status === 'OPEN' && (
-              <button
-                onClick={() => { onAcknowledge(alert.id); onClose(); }}
-                className="flex items-center gap-1.5 transition-colors hover:bg-slate-100"
-                style={{ padding: '8px 16px', fontSize: 12, fontWeight: 700, borderRadius: 12, background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              >
-                <Bell style={{ width: 13, height: 13 }} /> {isEn ? 'Acknowledge' : 'Tiếp nhận'}
-              </button>
-            )}
             {status === 'RESOLVED' ? (
               <button
                 onClick={onClose}
