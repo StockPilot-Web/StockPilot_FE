@@ -464,8 +464,8 @@ export function SettingsPage() {
     }
     setSavingProfile(true);
     try {
-      await apiClient.put('/auth/profile', { fullName: fullName.trim() });
-      toast({ title: isEn ? 'Profile Updated' : 'Cập nhật thành công', description: isEn ? 'Your full name has been saved.' : 'Họ tên của bạn đã được cập nhật.', type: 'success' });
+      await apiUpdateMe({ fullName: fullName.trim(), phone: storePhone.trim() || undefined });
+      toast({ title: isEn ? 'Profile Updated' : 'Cập nhật thành công', description: isEn ? 'Your profile has been saved.' : 'Hồ sơ của bạn đã được cập nhật.', type: 'success' });
       if (fetchMe) fetchMe();
     } catch (err) {
       toast({ title: isEn ? 'Update Failed' : 'Lỗi cập nhật', description: err?.response?.data?.error?.message || err?.message, type: 'error' });
@@ -482,7 +482,7 @@ export function SettingsPage() {
     }
     setSaving(true);
     try {
-      await apiUpdateStoreProfile({ name: storeName.trim(), phone: storePhone.trim(), address: storeAddress.trim() });
+      await apiUpdateStoreProfile({ storeName: storeName.trim(), phone: storePhone.trim(), address: storeAddress.trim() });
       toast({ title: isEn ? 'Saved' : 'Đã lưu', description: isEn ? 'Store profile updated successfully.' : 'Thông tin cửa hàng đã được cập nhật thành công.', type: 'success' });
       if (fetchMe) fetchMe();
     } catch (err) {

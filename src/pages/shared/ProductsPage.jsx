@@ -1410,9 +1410,11 @@ export function ProductsPage() {
               <FileUp style={{ width: 14, height: 14 }} /> {isEn ? 'Import from file' : t('importFromFile', 'Nhập từ file')}
             </Link>
           )}
-          <button className="pp-btn-add" onClick={() => setViewMode("add")}>
-            <Plus style={{ width: 16, height: 16, strokeWidth: 3 }} /> {t('addNewProduct', 'Thêm sản phẩm mới')}
-          </button>
+          {normalizeRole(user?.role) === "store_owner" && (
+            <button className="pp-btn-add" onClick={() => setViewMode("add")}>
+              <Plus style={{ width: 16, height: 16, strokeWidth: 3 }} /> {t('addNewProduct', 'Thêm sản phẩm mới')}
+            </button>
+          )}
         </div>
       </div>
 

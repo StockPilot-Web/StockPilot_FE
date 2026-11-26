@@ -21,6 +21,13 @@ export async function apiCreateProduct(payload) {
   let body = payload;
   let initialStock = 0;
 
+  if (payload.stock !== undefined && payload.stock !== '') {
+    initialStock = Number(payload.stock);
+    if (!Number.isInteger(initialStock) || initialStock < 0) {
+      throw new Error('Số lượng tồn kho phải là số nguyên không âm.');
+    }
+  }
+
   if (!payload.items) {
     const rawCode = payload.code || payload.sku || `SP-${Date.now()}`;
     const code = rawCode.toUpperCase().replace(/[^A-Z0-9_-]/g, '_');
