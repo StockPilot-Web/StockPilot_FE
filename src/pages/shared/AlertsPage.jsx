@@ -294,14 +294,6 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
               <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: meta.bg, border: '1px solid ' + meta.border, color: meta.text }}>
                 {meta.label}
               </span>
-              {status === 'ACKNOWLEDGED' && (
-                <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', border: '1px solid #e2e8f0', color: '#475569' }}>
-                  {isEn ? 'Acknowledged' : 'Đang theo dõi'}
-                </span>
-              )}
-              <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: riskColor(rs) }}>
-                {isEn ? 'Risk ' : 'Rủi ro '}{Math.round(rs)}/100
-              </span>
             </div>
             {/* title */}
             <h4 className="text-sm font-bold line-clamp-1 group-hover:text-blue-600 transition-colors" style={{ color: '#0f172a', marginBottom: 2 }}>
