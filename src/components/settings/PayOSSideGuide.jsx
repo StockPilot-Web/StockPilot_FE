@@ -81,34 +81,32 @@ export function PayOSSideGuide({ config, isEn }) {
             <p>{isEn ? 'Payment Channels → your channel → Webhook URL, then save in PayOS.' : 'Kênh thanh toán → kênh của bạn → Webhook URL, rồi bấm lưu trên PayOS.'}</p>
           </StepItem>
           <StepItem index={3} done={keysSaved} isEn={isEn}
-            title={isEn ? 'Copy the 3 keys into StockPilot' : 'Copy 3 mã bảo mật dán vào StockPilot'}>
+            title={isEn ? 'Finish the connection in StockPilot' : 'Hoàn tất kết nối trên StockPilot'}>
             <p>{keysSaved
               ? (isEn ? 'Saved. Use "Test connection" to verify.' : 'Đã lưu. Bấm "Kiểm tra kết nối" để xác minh.')
-              : (isEn ? 'Client ID, API Key and Checksum Key — then save.' : 'Client ID, API Key và Checksum Key — rồi bấm lưu.')}</p>
+              : (isEn ? 'Enter the connection details below, then save and test.' : 'Nhập thông tin kết nối bên dưới, sau đó lưu và kiểm tra.')}</p>
           </StepItem>
         </ol>
       </section>
 
       <section className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_0_rgb(15_23_42/0.04)]" aria-labelledby="payos-faq-title">
         <h3 id="payos-faq-title" className="mb-2 flex items-center gap-2 text-base font-semibold text-slate-900">
-          <HelpCircle className="size-4 text-slate-500" aria-hidden /> {isEn ? 'Troubleshooting' : 'Câu hỏi thường gặp'}
+          <HelpCircle className="size-4 text-slate-500" aria-hidden /> {isEn ? 'Quick help' : 'Trợ giúp nhanh'}
         </h3>
-        <FaqItem question={isEn ? 'Customer paid but the order did not complete?' : 'Khách đã chuyển nhưng đơn không tự hoàn tất?'}>
+        <FaqItem question={isEn ? 'Customer paid but the order is not updated?' : 'Khách đã thanh toán nhưng đơn chưa cập nhật?'}>
           {isEn
-            ? 'Check that the Webhook URL in PayOS matches the one on this page exactly and that the server is reachable over public HTTPS. Then confirm the Checksum Key matches the same payment channel.'
-            : 'Kiểm tra Webhook URL trên PayOS trùng khớp chính xác với đường dẫn ở trang này và máy chủ truy cập được qua HTTPS công khai. Sau đó xác nhận Checksum Key thuộc đúng kênh thanh toán đó.'}
+            ? 'First, check the connection status above and run “Test connection”. If the order is still pending, contact support with the order code and payment time.'
+            : 'Trước tiên, hãy kiểm tra trạng thái kết nối và bấm “Kiểm tra kết nối”. Nếu đơn vẫn chờ, hãy liên hệ hỗ trợ kèm mã đơn và thời điểm thanh toán.'}
         </FaqItem>
-        <FaqItem question={isEn ? 'How do I test on localhost with ngrok?' : 'Cấu hình Localhost qua ngrok thế nào?'}>
-          <p>{isEn ? 'PayOS cannot call localhost. Expose the backend port, e.g.:' : 'PayOS không gọi được localhost. Mở cổng backend ra ngoài, ví dụ:'}</p>
-          <code className="my-1.5 block rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] text-slate-800">ngrok http 5000</code>
-          <p>{isEn
-            ? 'Paste the HTTPS address ngrok prints, followed by /api/v1/pos/payos/webhook, into PayOS.'
-            : 'Dán địa chỉ HTTPS ngrok in ra, kèm đuôi /api/v1/pos/payos/webhook, vào PayOS.'}</p>
-        </FaqItem>
-        <FaqItem question={isEn ? 'What is the Checksum Key for?' : 'Checksum Key dùng để làm gì?'}>
+        <FaqItem question={isEn ? 'How do I turn VietQR on or off at the POS?' : 'Bật hoặc tắt VietQR tại quầy POS thế nào?'}>
           {isEn
-            ? 'StockPilot uses it to verify the HMAC-SHA256 signature on every webhook, so forged "payment received" calls are rejected. An "Invalid signature" error usually means the key was copied with extra spaces or from another channel.'
-            : 'StockPilot dùng khóa này để kiểm tra chữ ký HMAC-SHA256 trên mọi webhook, nhờ đó chặn các lệnh "đã nhận tiền" giả mạo. Lỗi "chữ ký không hợp lệ" thường do copy thừa khoảng trắng hoặc lấy khóa của kênh khác.'}
+            ? 'Use the VietQR switch at the top of this page. You can pause VietQR without deleting the saved connection.'
+            : 'Dùng công tắc VietQR ở đầu trang. Bạn có thể tạm tắt VietQR mà không xóa thông tin kết nối đã lưu.'}
+        </FaqItem>
+        <FaqItem question={isEn ? 'What should I do if setup is still incomplete?' : 'Nếu chưa thiết lập xong thì phải làm gì?'}>
+          {isEn
+            ? 'Complete the three setup steps, save the connection details, and run “Test connection”. The POS will show VietQR after the connection is active.'
+            : 'Hoàn tất ba bước thiết lập, lưu thông tin kết nối và bấm “Kiểm tra kết nối”. POS sẽ hiển thị VietQR sau khi kết nối hoạt động.'}
         </FaqItem>
       </section>
     </aside>
