@@ -605,6 +605,7 @@ export function AlertsPage() {
 
   const critCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && a.severity === 'CRITICAL').length, [alerts]);
   const warnCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && a.severity === 'WARNING').length, [alerts]);
+  const infoCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && (a.severity || '').toUpperCase() === 'INFO').length, [alerts]);
   const openCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status)).length, [alerts]);
   const ackCount = useMemo(() => alerts.filter(a => a.status === 'ACKNOWLEDGED').length, [alerts]);
   const resolvedCount = useMemo(() => alerts.filter(a => (a.status || '').toUpperCase() === 'RESOLVED').length, [alerts]);
@@ -888,13 +889,13 @@ export function AlertsPage() {
           border="#fde68a"
         />
         <KpiCard
-          icon={Bell}
-          label={isEn ? 'Open' : 'Đang mở'}
-          value={openCount}
-          sub={isEn ? 'Pending' : 'Chưa xử lý'}
-          bg="#fff7ed"
-          text="#ea580c"
-          border="#fed7aa"
+          icon={AlertCircle}
+          label={isEn ? 'Info' : 'Thông tin'}
+          value={infoCount}
+          sub={isEn ? 'Notice' : 'Lưu ý'}
+          bg="#eff6ff"
+          text="#2563eb"
+          border="#bfdbfe"
         />
         <KpiCard
           icon={CheckCircle2}
