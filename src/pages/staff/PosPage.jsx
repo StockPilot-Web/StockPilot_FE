@@ -104,76 +104,7 @@ export function getProductStock(p) {
 }
 
 function getPosProductImage(p) {
-  if (p?.imageUrl) return p.imageUrl;
-  const name = (p?.name || p?.productName || '').toLowerCase();
-  const sku = (p?.sku || p?.code || p?.productCode || '').toLowerCase();
-
-  // Beverages / Beer / Drinks
-  if (name.includes('bia') || name.includes('heineken') || name.includes('tiger') || name.includes('saigon') || name.includes('rượu') || name.includes('ruou') || name.includes('nước ngọt') || name.includes('nuoc ngot') || name.includes('nước') || name.includes('pepsi') || name.includes('coca') || name.includes('redbull') || name.includes('sting')) {
-    if (name.includes('heineken')) {
-      return 'https://images.unsplash.com/photo-1608270114032-4720935574dc?w=240&h=240&fit=crop';
-    }
-    return 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=240&h=240&fit=crop';
-  }
-
-  // Fashion / Apparel (matching screenshot)
-  if (name.includes('vest') || name.includes('suit')) {
-    if (name.includes('xanh lá') || name.includes('xanh la')) {
-      return 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=240&h=240&fit=crop';
-    }
-    if (name.includes('kem') || name.includes('trắng') || name.includes('trang')) {
-      return 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=240&h=240&fit=crop';
-    }
-    return 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=240&h=240&fit=crop';
-  }
-  if (name.includes('sơ mi') || name.includes('so mi')) {
-    if (name.includes('đỏ') || name.includes('do') || name.includes('caro')) {
-      return 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=240&h=240&fit=crop';
-    }
-    if (name.includes('trắng') || name.includes('trang') || name.includes('sọc')) {
-      return 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=240&h=240&fit=crop';
-    }
-    return 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=240&h=240&fit=crop';
-  }
-  if (name.includes('cà vạt') || name.includes('ca vat') || name.includes('tie')) {
-    return 'https://images.unsplash.com/photo-1589756823695-278bc923f962?w=240&h=240&fit=crop';
-  }
-  if (name.includes('thắt lưng') || name.includes('that lung') || name.includes('belt')) {
-    return 'https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=240&h=240&fit=crop';
-  }
-  if (name.includes('quần tây') || name.includes('quan tay') || name.includes('kaki') || name.includes('quần')) {
-    return 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=240&h=240&fit=crop';
-  }
-
-  // Convenience / Grocery / Electronics
-  if (name.includes('ổ cắm') || name.includes('o cam') || sku.includes('oc-')) {
-    return 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=240&h=240&fit=crop';
-  }
-  if (name.includes('pin') || sku.includes('pin')) {
-    return 'https://images.unsplash.com/photo-1619725002198-6a689b72f41d?w=240&h=240&fit=crop';
-  }
-  if (name.includes('khẩu trang') || name.includes('khau trang') || sku.includes('kt-')) {
-    return 'https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=240&h=240&fit=crop';
-  }
-  if (name.includes('khăn giấy') || name.includes('khan giay') || sku.includes('kg-')) {
-    return 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=240&h=240&fit=crop';
-  }
-  if (name.includes('băng dính') || name.includes('bang dinh') || sku.includes('bd-')) {
-    return 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=240&h=240&fit=crop';
-  }
-  if (name.includes('keo 502') || sku.includes('keo')) {
-    return 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=240&h=240&fit=crop';
-  }
-  if (name.includes('bánh mì') || name.includes('banh mi') || name.includes('xúc xích') || name.includes('xuc xich')) {
-    return 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=240&h=240&fit=crop';
-  }
-  if (name.includes('cà phê') || name.includes('ca phe') || name.includes('trà') || name.includes('coca') || name.includes('sữa')) {
-    return 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=240&h=240&fit=crop';
-  }
-  if (name.includes('dầu gội') || name.includes('dau goi') || name.includes('kem đánh răng') || name.includes('sữa tắm')) {
-    return 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=240&h=240&fit=crop';
-  }
-  return 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=240&h=240&fit=crop';
+  return typeof p?.imageUrl === 'string' && p.imageUrl.trim() ? p.imageUrl.trim() : '';
 }
 
 function applyPosOverrides(products) {
@@ -1475,7 +1406,7 @@ export function PosPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '40px 38px 1fr 70px 88px 96px',
+            gridTemplateColumns: '36px 36px minmax(170px, 1fr) 76px 88px 104px',
             gap: 8,
             padding: '10px 16px',
             borderBottom: '1px solid hsl(214 25% 89%)',
@@ -1516,7 +1447,7 @@ export function PosPage() {
                 key={item.stockItemId}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '40px 38px 1fr 70px 88px 96px',
+                  gridTemplateColumns: '36px 36px minmax(170px, 1fr) 76px 88px 104px',
                   gap: 8,
                   padding: '10px 16px',
                   alignItems: 'center',
@@ -1540,6 +1471,8 @@ export function PosPage() {
                 <div style={{ textAlign: 'center' }}>
                   <button
                     onClick={() => removeItem(item.stockItemId)}
+                    aria-label={isEn ? `Remove ${item.name}` : `Xóa ${item.name}`}
+                    title={isEn ? 'Remove item' : 'Xóa sản phẩm'}
                     style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid hsl(214 25% 89%)', background: 'white', color: '#94a3b8', cursor: 'pointer', transition: 'all 0.15s', margin: '0 auto' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#fca5a5'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'hsl(214 25% 89%)'; }}
@@ -1550,16 +1483,21 @@ export function PosPage() {
 
                 {/* Image + Name + SKU */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  <img
-                    src={item.imageUrl || getPosProductImage(item)}
-                    alt={item.name}
-                    style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 10, border: '2px solid hsl(214 25% 87%)', background: '#f1f5f9', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.07)' }}
-                    onError={e => { e.target.src = 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=240&h=240&fit=crop'; }}
-                  />
+                  <div aria-label={isEn ? 'Product image' : 'Ảnh sản phẩm'} title={!getPosProductImage(item) ? (isEn ? 'No product image' : 'Chưa có ảnh sản phẩm') : undefined} style={{ width: 52, height: 52, borderRadius: 10, border: '2px solid hsl(214 25% 87%)', background: '#f1f5f9', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {getPosProductImage(item) && (
+                      <img
+                        src={getPosProductImage(item)}
+                        alt={item.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                      />
+                    )}
+                    <Package aria-hidden className={`w-5 h-5 text-slate-400 ${getPosProductImage(item) ? 'hidden' : ''}`} />
+                  </div>
                   <div style={{ minWidth: 0 }}>
-                    <p style={{ fontWeight: 800, color: '#1e293b', fontSize: 14, lineHeight: 1.35, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.05em', background: 'hsl(214 30% 95%)', padding: '2px 7px', borderRadius: 5 }}>{item.sku}</span>
+                    <p title={item.name} style={{ fontWeight: 800, color: '#1e293b', fontSize: 14, lineHeight: 1.35, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.name}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap', minWidth: 0 }}>
+                      <span title={item.sku} style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.05em', background: 'hsl(214 30% 95%)', padding: '2px 7px', borderRadius: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{item.sku}</span>
                       {(() => {
                         const matched = products.find((p) => p.stockItems?.some((si) => si.id === item.stockItemId) || p.id === item.productId);
                         const curStock = matched ? getProductStock(matched) : null;
@@ -1587,6 +1525,8 @@ export function PosPage() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   <button
                     onClick={() => updateItemQuantity(item.stockItemId, item.quantity - 1)}
+                    aria-label={isEn ? `Decrease ${item.name}` : `Giảm số lượng ${item.name}`}
+                    title={isEn ? 'Decrease quantity' : 'Giảm số lượng'}
                     style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid hsl(214 25% 87%)', background: 'white', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#93c5fd'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = 'hsl(214 25% 87%)'; }}
@@ -1597,12 +1537,15 @@ export function PosPage() {
                     type="number"
                     min="1"
                     value={item.quantity}
+                    aria-label={isEn ? `Quantity of ${item.name}` : `Số lượng ${item.name}`}
                     onChange={(e) => updateItemQuantity(item.stockItemId, e.target.value)}
                     className="pos-qty-input"
                     style={{ width: 36, textAlign: 'center', fontWeight: 800, fontSize: 13, padding: '3px 2px', border: '1px solid hsl(214 25% 87%)', borderRadius: 6, background: 'white', color: '#1e293b', outline: 'none', MozAppearance: 'textfield', WebkitAppearance: 'none' }}
                   />
                   <button
                     onClick={() => updateItemQuantity(item.stockItemId, item.quantity + 1)}
+                    aria-label={isEn ? `Increase ${item.name}` : `Tăng số lượng ${item.name}`}
+                    title={isEn ? 'Increase quantity' : 'Tăng số lượng'}
                     style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid hsl(214 25% 87%)', background: 'white', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#93c5fd'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = 'hsl(214 25% 87%)'; }}
@@ -1614,11 +1557,13 @@ export function PosPage() {
                 {/* Unit Price (Editable) */}
                 <div style={{ textAlign: 'right' }}>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     min="0"
                     step="any"
-                    value={item.price}
-                    onChange={(e) => updateItemPrice(item.stockItemId, e.target.value)}
+                    value={safeNum(item.price).toLocaleString('vi-VN')}
+                    onChange={(e) => updateItemPrice(item.stockItemId, e.target.value.replace(/\D/g, ''))}
+                    aria-label={isEn ? `Unit price of ${item.name}` : `Đơn giá ${item.name}`}
                     title="Nhấp để sửa đơn giá nếu cần"
                     style={{
                       width: '100%',
@@ -1704,6 +1649,7 @@ export function PosPage() {
             <input
               ref={searchInputRef}
               type="text"
+              aria-label={t('searchProduct', 'Tìm kiếm sản phẩm')}
               placeholder={t('searchProductPlaceholder', 'Tìm hàng hóa theo tên, mã SP, barcode (F3)...')}
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
@@ -1713,6 +1659,7 @@ export function PosPage() {
             {searchDraft && (
               <button
                 onClick={clearSearch}
+                aria-label={isEn ? 'Clear product search' : 'Xóa tìm kiếm sản phẩm'}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
@@ -1722,6 +1669,7 @@ export function PosPage() {
           <button
             onClick={loadProducts}
             disabled={isLoadingProducts}
+            aria-label={isEn ? 'Refresh products' : 'Tải lại sản phẩm'}
             className="p-2 rounded-lg border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-all disabled:opacity-40"
             title="Tải lại danh sách"
           >
@@ -1731,7 +1679,7 @@ export function PosPage() {
 
         {/* Categories */}
         <div
-          className="px-3 py-2 border-b flex items-center gap-1.5 overflow-x-auto text-xs"
+          className="pos-category-scroll px-3 py-2 border-b flex items-center gap-1.5 overflow-x-auto text-xs"
           style={{ background: 'hsl(214 30% 97%)', borderColor: 'hsl(214 25% 89%)' }}
         >
           <button
@@ -1822,14 +1770,22 @@ export function PosPage() {
 
                     {/* Product Image on the Left */}
                     <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-lg overflow-hidden bg-white border border-slate-100 p-0.5 flex items-center justify-center">
-                      <img
-                        src={imgUrl}
-                        alt={p.name}
-                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
-                        onError={(e) => {
-                          e.target.src = "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=200&h=200&fit=crop";
-                        }}
-                      />
+                      {imgUrl && (
+                        <img
+                          src={imgUrl}
+                          alt={p.name}
+                          className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                        />
+                      )}
+                      <Package aria-hidden className={`w-7 h-7 text-slate-300 ${imgUrl ? 'hidden' : ''}`} />
+                      {isOutOfStock && (
+                        <div className="absolute bottom-0 inset-x-0 bg-red-600/90 py-0.5 flex items-center justify-center z-10">
+                          <span className="text-white text-[7.5px] sm:text-[8px] font-bold tracking-tight uppercase text-center leading-none">
+                            {isEn ? 'Out of stock' : 'Hết hàng'}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Product Info on the Right */}
