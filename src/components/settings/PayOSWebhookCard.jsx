@@ -92,8 +92,8 @@ export function PayOSWebhookCard({ webhookUrl, isPublicDomain, isEn }) {
           <p>
             <span className="font-semibold">{isEn ? 'Local address detected. ' : 'Đang chạy ở địa chỉ cục bộ. '}</span>
             {isEn
-              ? 'PayOS cannot reach localhost. Expose the backend with a public HTTPS tunnel (ngrok, Cloudflare Tunnel) and use that URL instead.'
-              : 'PayOS không gọi được tới localhost. Hãy mở backend ra ngoài qua tunnel HTTPS công khai (ngrok, Cloudflare Tunnel) và dùng đường dẫn đó.'}
+              ? 'PayOS cannot reach a local address. Use a public HTTPS address for the payment service or contact technical support.'
+              : 'PayOS không thể gọi tới địa chỉ cục bộ. Hãy dùng địa chỉ HTTPS công khai cho dịch vụ thanh toán hoặc liên hệ hỗ trợ kỹ thuật.'}
           </p>
         </div>
       )}
