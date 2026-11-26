@@ -452,12 +452,14 @@ export function AIAssistantPage() {
   // Tự động gửi câu hỏi nếu được điều hướng từ trang Cảnh báo ("Hỏi Pilot AI về cảnh báo này")
   useEffect(() => {
     const preset = location.state?.presetQuery;
-    if (preset && typeof preset === 'string' && handledPresetRef.current !== preset) {
-      handledPresetRef.current = preset;
-      handleSendMessage(preset);
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location.state]);
+    if (!preset || typeof preset !== 'string') return;
+    if (isHistoryLoading || isSending) return;
+    if (handledPresetRef.current === preset) return;
+
+    handledPresetRef.current = preset;
+    handleSendMessage(preset);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.state, isHistoryLoading, isSending]);
 
   const handleRetry = (turnId, text) => {
     stick();
