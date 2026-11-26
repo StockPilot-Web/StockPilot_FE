@@ -221,8 +221,9 @@ export function Sidebar() {
                   <Icon
                     className={cn(
                       'w-4.5 h-4.5 shrink-0 transition-colors',
-                      isActive ? 'text-[#3B82F6]' : 'text-[#94A3B8] group-hover:text-[#64748B]'
+                      isActive ? 'text-[#2563EB]' : 'text-[#334155] group-hover:text-[#0F172A]'
                     )}
+                    strokeWidth={2.15}
                     style={{ width: '18px', height: '18px' }}
                   />
 
