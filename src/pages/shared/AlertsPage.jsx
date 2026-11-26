@@ -288,9 +288,6 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
           <div className="flex-1 min-w-0">
             {/* badges */}
             <div className="flex flex-wrap items-center gap-1.5" style={{ marginBottom: 6 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sevCfg.cardBg, color: sevCfg.cardText }}>
-                {sevCfg.label}
-              </span>
               <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: meta.bg, border: '1px solid ' + meta.border, color: meta.text }}>
                 {meta.label}
               </span>
