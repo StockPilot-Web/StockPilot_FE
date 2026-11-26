@@ -317,7 +317,6 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
                 </span>
               )}
               <span className="flex items-center gap-1"><Clock style={{ width: 12, height: 12 }} />{fmtDate(alert.openedAt, isEn)}</span>
-              {conf > 0 && <span className="flex items-center gap-1"><Activity style={{ width: 12, height: 12 }} />{isEn ? 'Confidence: ' : 'Tin cậy: '}{Math.round(conf)}%</span>}
             </div>
           </div>
         </div>
@@ -344,23 +343,13 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
               <Bell style={{ width: 13, height: 13 }} /> {isEn ? 'Acknowledge' : 'Tiếp nhận'}
             </button>
           )}
-          {status === 'RESOLVED' ? (
+          {status === 'RESOLVED' && (
             <span
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl"
               style={{ background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1' }}
             >
               <Check style={{ width: 13, height: 13 }} /> {isEn ? 'Resolved' : 'Đã xử lý'}
             </span>
-          ) : (
-            onResolve && (
-              <button
-                onClick={e => { e.stopPropagation(); onResolve(alert.id); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors hover:opacity-90"
-                style={{ background: '#16a34a', color: '#fff' }}
-              >
-                <Check style={{ width: 13, height: 13 }} /> {isEn ? 'Resolved' : 'Đã xử lý'}
-              </button>
-            )
           )}
         </div>
       </div>
@@ -616,6 +605,7 @@ export function AlertsPage() {
 
   const critCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && a.severity === 'CRITICAL').length, [alerts]);
   const warnCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && a.severity === 'WARNING').length, [alerts]);
+  const infoCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status) && (a.severity || '').toUpperCase() === 'INFO').length, [alerts]);
   const openCount = useMemo(() => alerts.filter(a => ['OPEN', 'open'].includes(a.status)).length, [alerts]);
   const ackCount = useMemo(() => alerts.filter(a => a.status === 'ACKNOWLEDGED').length, [alerts]);
   const resolvedCount = useMemo(() => alerts.filter(a => (a.status || '').toUpperCase() === 'RESOLVED').length, [alerts]);
@@ -899,13 +889,13 @@ export function AlertsPage() {
           border="#fde68a"
         />
         <KpiCard
-          icon={Bell}
-          label={isEn ? 'Open' : 'Đang mở'}
-          value={openCount}
-          sub={isEn ? 'Pending' : 'Chưa xử lý'}
-          bg="#fff7ed"
-          text="#ea580c"
-          border="#fed7aa"
+          icon={AlertCircle}
+          label={isEn ? 'Info' : 'Thông tin'}
+          value={infoCount}
+          sub={isEn ? 'Notice' : 'Lưu ý'}
+          bg="#eff6ff"
+          text="#2563eb"
+          border="#bfdbfe"
         />
         <KpiCard
           icon={CheckCircle2}
