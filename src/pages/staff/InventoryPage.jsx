@@ -205,7 +205,22 @@ export function InventoryPage() {
   };
 
   /* ─── actions ─── */
+  const ensureProductActive = () => {
+    if (selProduct && (selProduct.isActive === false || selProduct.status === 'inactive')) {
+      toast({
+        type: 'warning',
+        title: isEn ? 'Product discontinued' : 'Sản phẩm đã ngừng bán',
+        message: isEn
+          ? `"${selProduct.name}" is discontinued. Please re-enable it in Products to import, export, or adjust stock.`
+          : `Sản phẩm "${selProduct.name}" đã ngừng bán. Vui lòng mở bán lại để nhập, xuất hoặc điều chỉnh kho.`,
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleStockIn = async () => {
+    if (!ensureProductActive()) return;
     const stockItemId = getStockItemId(selProductId);
     if (!stockItemId || !qty || Number(qty) <= 0) {
       toast({
@@ -235,6 +250,7 @@ export function InventoryPage() {
   };
 
   const handleStockOut = async () => {
+    if (!ensureProductActive()) return;
     const stockItemId = getStockItemId(selProductId);
     if (!stockItemId || !qty || Number(qty) <= 0) {
       toast({
@@ -272,6 +288,7 @@ export function InventoryPage() {
   };
 
   const handleAdjust = async () => {
+    if (!ensureProductActive()) return;
     const stockItemId = getStockItemId(selProductId);
     if (!stockItemId || qty === '' || Number(qty) < 0) {
       toast({
