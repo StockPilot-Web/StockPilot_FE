@@ -230,7 +230,7 @@ export function Sidebar() {
                     <span
                       className={cn(
                         'truncate flex-1 text-[13px]',
-                        isActive ? 'font-bold text-blue-700' : 'font-medium'
+                        isActive ? 'font-semibold text-blue-700' : 'font-medium'
                       )}
                     >
                       {item.name}

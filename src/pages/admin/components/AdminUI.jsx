@@ -76,7 +76,7 @@ export function PageHeader({ title, description, badge, actions, children }) {
             </p>
           )}
         </div>
-        {actions && <div className="flex flex-wrap items-center gap-2.5 shrink-0">{actions}</div>}
+        {actions && <div className="flex w-full sm:w-auto flex-wrap items-center gap-2.5 shrink-0">{actions}</div>}
       </div>
       {children}
     </div>
@@ -309,20 +309,20 @@ export function StatCard({
 }) {
   const content = (
     <div
-      className={`relative h-full p-4 bg-white rounded-xl border shadow-xs transition-colors duration-150 ${
+      className={`relative h-full p-4 bg-white rounded-xl border shadow-xs transition-[background-color,border-color,box-shadow] duration-150 ${
         alert ? 'border-amber-300' : 'border-slate-200'
-      } ${to || onClick ? 'hover:border-slate-300 hover:bg-slate-50/60 cursor-pointer' : ''}`}
+      } ${to || onClick ? 'hover:border-blue-200 hover:bg-blue-50/20 hover:shadow-sm cursor-pointer' : ''}`}
     >
       <div className="flex items-center justify-between gap-3">
         <p className="text-[13px] font-medium text-slate-500">{title}</p>
         {Icon && (
-          <span className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${iconBg}`}>
+            <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-inset ring-black/5 ${iconBg}`}>
             <Icon className="w-4 h-4" aria-hidden="true" />
           </span>
         )}
       </div>
 
-      <p className="admin-num mt-2 text-[28px] font-semibold text-slate-900 tabular-nums leading-tight">
+      <p className="admin-num mt-2 text-[30px] font-semibold text-slate-900 tabular-nums leading-tight">
         {loading ? (
           <span className="inline-block w-20 h-7 rounded-md bg-slate-100 animate-pulse align-middle" />
         ) : (
@@ -381,7 +381,14 @@ export function TableCard({ children, header, footer }) {
           {header}
         </div>
       )}
-      <div className="relative overflow-x-auto">{children}</div>
+      <div
+        className="admin-table-scroll relative overflow-x-auto"
+        tabIndex={0}
+        role="region"
+        aria-label="Bảng dữ liệu — cuộn ngang để xem thêm cột"
+      >
+        {children}
+      </div>
       {footer}
     </div>
   );
@@ -393,11 +400,11 @@ export function Th({ children, className = '', align = 'left', sortKey, currentS
 
   if (sortKey && onSort) {
     return (
-      <th
+        <th
         scope="col"
         onClick={() => onSort(sortKey)}
         aria-sort={isSorted ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
-        className={`px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap cursor-pointer hover:text-slate-900 transition-colors select-none ${
+        className={`sticky top-0 z-10 px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap cursor-pointer hover:text-slate-900 transition-colors select-none ${
           ALIGN[align]
         } ${className}`}
       >
@@ -422,7 +429,7 @@ export function Th({ children, className = '', align = 'left', sortKey, currentS
   return (
     <th
       scope="col"
-      className={`px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap select-none ${ALIGN[align]} ${className}`}
+      className={`sticky top-0 z-10 px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap select-none ${ALIGN[align]} ${className}`}
     >
       {children}
     </th>

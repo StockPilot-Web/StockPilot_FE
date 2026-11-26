@@ -107,6 +107,25 @@
     letter-spacing: -0.02em;
   }
 
+  /* Data tables keep their columns readable on narrow admin viewports.
+     The focusable region makes horizontal scrolling discoverable by keyboard users. */
+  .admin-ui .admin-table-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+    box-shadow: inset -14px 0 14px -16px hsl(var(--foreground) / 0.45);
+  }
+  .admin-ui .admin-table-scroll:focus-visible {
+    outline-offset: -2px;
+  }
+  .admin-ui .admin-table-scroll table {
+    min-width: 720px;
+  }
+  @media (max-width: 640px) {
+    .admin-ui .admin-table-scroll table {
+      min-width: 640px;
+    }
+  }
+
   *:focus-visible {
     outline: 2px solid hsl(var(--ring) / 0.7);
     outline-offset: 2px;
@@ -409,4 +428,13 @@
 }
 .pos-qty-input[type=number] {
   -moz-appearance: textfield;
+}
+
+/* POS category chips remain horizontally scrollable without exposing a scrollbar. */
+.pos-category-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.pos-category-scroll::-webkit-scrollbar {
+  display: none;
 }
