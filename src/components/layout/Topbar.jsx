@@ -13,6 +13,7 @@ import { useUIStore } from '../store/uiStore';
 import { useTranslation } from '../../i18n/useTranslation';
 import { useToast } from '../common/Toast';
 import { Breadcrumbs } from './Breadcrumbs';
+import { ONBOARDING_OPEN_EVENT } from '../common/OnboardingGuide';
 import { apiGetNotifications, apiMarkNotificationRead, apiMarkAllNotificationsRead } from '../../services/analyticsService';
 import { normalizeRole } from '../../config/permissions.config';
 
@@ -698,6 +699,18 @@ export function Topbar() {
                 <p className="text-[11px]">{isEn ? 'Open a ticket on the Support page; the StockPilot team replies there.' : 'Gửi yêu cầu ở trang Hỗ trợ; đội StockPilot sẽ trả lời ngay trong phiếu.'}</p>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setHelpModalOpen(false);
+                window.dispatchEvent(new CustomEvent(ONBOARDING_OPEN_EVENT));
+              }}
+              className="mb-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <HelpCircle className="h-4 w-4" />
+              {isEn ? 'Open step-by-step tour again' : 'Mở lại hướng dẫn từng bước'}
+            </button>
 
             <button onClick={() => setHelpModalOpen(false)} className="w-full py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm">
               {isEn ? 'Got it' : 'Đã hiểu'}

@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { PlatformAnnouncement } from './PlatformAnnouncement';
 import { AIChatBox } from '../common/AIChatBox';
+import { OnboardingGuide } from '../common/OnboardingGuide';
 import { useUIStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { normalizeRole, canUseAiAssistant } from '../../config/permissions.config';
@@ -52,6 +53,7 @@ export function MainLayout() {
 
       {/* Floating AI Assistant Chat Box (chỉ chủ cửa hàng) */}
       {canUseAi && <AIChatBox />}
+      <OnboardingGuide />
     </div>
   );
 }
