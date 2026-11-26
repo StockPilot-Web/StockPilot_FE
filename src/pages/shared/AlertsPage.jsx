@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, ShieldAlert, ShieldCheck, XCircle,
-  RefreshCw, Bot, Search, Filter, X, Check, Eye, Clock,
+  RefreshCw, Bot, Search, Filter, X, Check, CheckCircle2, Eye, Clock,
   Package, TrendingDown, Zap, Archive, BarChart3,
   Bell, BellOff, Activity, AlertCircle, Boxes, Loader2,
 } from 'lucide-react';
@@ -346,14 +346,23 @@ function AlertCard({ alert, onAcknowledge, onResolve, onView, isEn }) {
               <Bell style={{ width: 13, height: 13 }} /> {isEn ? 'Acknowledge' : 'Tiếp nhận'}
             </button>
           )}
-          {onResolve && (
-            <button
-              onClick={e => { e.stopPropagation(); onResolve(alert.id); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors hover:opacity-90"
-              style={{ background: '#16a34a', color: '#fff' }}
+          {status === 'RESOLVED' ? (
+            <span
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl"
+              style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0' }}
             >
               <Check style={{ width: 13, height: 13 }} /> {isEn ? 'Resolved' : 'Đã xử lý'}
-            </button>
+            </span>
+          ) : (
+            onResolve && (
+              <button
+                onClick={e => { e.stopPropagation(); onResolve(alert.id); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors hover:opacity-90"
+                style={{ background: '#16a34a', color: '#fff' }}
+              >
+                <Check style={{ width: 13, height: 13 }} /> {isEn ? 'Resolved' : 'Đã xử lý'}
+              </button>
+            )
           )}
         </div>
       </div>
@@ -488,12 +497,37 @@ function AlertDetailModal({ alert, onClose, onAcknowledge, onResolve, onAskAI, i
                 </div>
               ))}
             </div>
+            {status === 'RESOLVED' && (
+              <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+                  {isEn ? 'Resolution Summary' : 'Cách đã xử lý'}
+                </div>
+                <div style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
+                  {alert.reasonJson?.lifecycle?.resolvedBy === 'ENGINE'
+                    ? (isEn
+                        ? 'Automatically closed by the system after stock returned to a safe level.'
+                        : 'Hệ thống tự động đóng sau khi tồn kho quay về ngưỡng an toàn.')
+                    : (isEn
+                        ? 'Manually confirmed as resolved by the store owner.'
+                        : 'Chủ cửa hàng đã xác nhận xử lý thủ công.')}
+                </div>
+                {alert.reasonJson?.lifecycle?.ackNote && (
+                  <div style={{ fontSize: 11, color: '#15803d', marginTop: 4 }}>
+                    {isEn ? 'Note: ' : 'Ghi chú: '}{alert.reasonJson.lifecycle.ackNote}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* footer */}
         <div style={{ padding: '14px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          {onAskAI ? (
+          {status === 'RESOLVED' ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#15803d' }}>
+              <CheckCircle2 style={{ width: 15, height: 15 }} /> {isEn ? 'This alert has been resolved' : 'Cảnh báo này đã được xử lý'}
+            </span>
+          ) : onAskAI ? (
           <button
             onClick={() => onAskAI(alert)}
             className="flex items-center gap-2 transition-colors hover:bg-violet-100"
@@ -516,7 +550,15 @@ function AlertDetailModal({ alert, onClose, onAcknowledge, onResolve, onAskAI, i
                 <Bell style={{ width: 13, height: 13 }} /> {isEn ? 'Acknowledge' : 'Tiếp nhận'}
               </button>
             )}
-            {onResolve && (
+            {status === 'RESOLVED' ? (
+              <button
+                onClick={onClose}
+                className="flex items-center gap-1.5 transition-colors hover:bg-slate-200"
+                style={{ padding: '8px 16px', fontSize: 12, fontWeight: 700, borderRadius: 12, background: '#e2e8f0', color: '#0f172a', border: 'none', cursor: 'pointer' }}
+              >
+                {isEn ? 'Close' : 'Đóng'}
+              </button>
+            ) : onResolve && (
             <button
               onClick={() => { onResolve(alert.id); onClose(); }}
               className="flex items-center gap-1.5 transition-colors hover:opacity-90"
@@ -868,13 +910,13 @@ export function AlertsPage() {
           border="#fed7aa"
         />
         <KpiCard
-          icon={BellOff}
-          label={isEn ? 'Acknowledged' : 'Đang theo dõi'}
-          value={ackCount}
-          sub={isEn ? 'Tracking' : 'Đã tiếp nhận'}
-          bg="#eff6ff"
-          text="#2563eb"
-          border="#bfdbfe"
+          icon={CheckCircle2}
+          label={isEn ? 'Resolved' : 'Đã xử lý'}
+          value={resolvedCount}
+          sub={isEn ? 'Completed' : 'Hoàn tất'}
+          bg="#f0fdf4"
+          text="#16a34a"
+          border="#bbf7d0"
         />
       </div>
 
@@ -884,7 +926,6 @@ export function AlertsPage() {
           {[
             { key: 'ALL', label: isEn ? 'All Active' : 'Tất cả', count: openCount + ackCount },
             { key: 'OPEN', label: isEn ? 'Pending' : 'Chưa xử lý', count: openCount },
-            { key: 'ACKNOWLEDGED', label: isEn ? 'Acknowledged' : 'Đang theo dõi', count: ackCount },
             { key: 'RESOLVED', label: isEn ? 'Resolved' : 'Đã xử lý', count: resolvedCount },
           ].map(tab => (
             <button
@@ -1032,7 +1073,7 @@ export function AlertsPage() {
               key={a.id}
               alert={a}
               onAcknowledge={handleAck}
-              onResolve={canResolve ? handleResolve : undefined}
+              onResolve={canResolve && activeTab !== 'ALL' ? handleResolve : undefined}
               onView={setModalAlert}
               isEn={isEn}
             />
