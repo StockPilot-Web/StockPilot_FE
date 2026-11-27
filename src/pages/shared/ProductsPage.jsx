@@ -2268,7 +2268,7 @@ export function ProductsPage() {
                         ) : (
                           <Upload style={{ width: 13, height: 13 }} />
                         )}
-                        {isUploadingImage ? "Đang tải ảnh lên Cloudinary..." : "Tải ảnh từ máy"}
+                        {isUploadingImage ? "Đang tải ảnh..." : "Tải ảnh từ máy"}
                         <input
                           type="file"
                           accept="image/*"
@@ -2284,7 +2284,7 @@ export function ProductsPage() {
                               toast({
                                 type: "success",
                                 title: "Tải ảnh thành công",
-                                message: "Ảnh đã được tải lên Cloudinary!",
+                                message: "Ảnh đã được tải lên!",
                               });
                             } catch (uploadErr) {
                               toast({

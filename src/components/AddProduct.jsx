@@ -172,7 +172,7 @@ export function AddProduct({ onBack }) {
       setUploadedUrl(url);
     } catch (err) {
       console.warn("Lỗi upload Cloudinary:", err);
-      setUploadError(err?.message || "Không thể tải ảnh lên Cloudinary");
+      setUploadError(err?.message || "Không thể tải ảnh lên");
     } finally {
       setIsUploading(false);
     }
@@ -250,7 +250,7 @@ export function AddProduct({ onBack }) {
           finalImageUrl = await uploadImageToCloudinary(imageFile);
           setUploadedUrl(finalImageUrl);
         } catch (uploadErr) {
-          throw new Error(`Upload ảnh lên Cloudinary thất bại: ${uploadErr.message}`);
+          throw new Error(`Tải ảnh lên thất bại: ${uploadErr.message}`);
         } finally {
           setIsUploading(false);
         }
@@ -771,13 +771,13 @@ export function AddProduct({ onBack }) {
                   {isUploading && (
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white p-4 text-center">
                       <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-                      <span className="text-xs font-bold">{isEn ? "Uploading to Cloudinary..." : "Đang tải ảnh lên Cloudinary..."}</span>
+                      <span className="text-xs font-bold">{isEn ? "Uploading image..." : "Đang tải ảnh..."}</span>
                     </div>
                   )}
 
                   {!isUploading && uploadedUrl && (
                     <div className="absolute top-2 left-2 bg-emerald-600/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-xs flex items-center gap-1 shadow-xs">
-                      <CheckCircle2 className="w-3 h-3" /> {isEn ? "Saved to Cloudinary" : "Đã lưu Cloudinary"}
+                      <CheckCircle2 className="w-3 h-3" /> {isEn ? "Saved" : "Đã lưu"}
                     </div>
                   )}
 
