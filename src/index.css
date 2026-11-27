@@ -438,3 +438,24 @@
 .pos-category-scroll::-webkit-scrollbar {
   display: none;
 }
+
+/* POS cart table: keep the money column visible on 14-inch laptop widths. */
+.pos-cart-grid {
+  display: grid;
+  grid-template-columns: 36px 36px minmax(170px, 1fr) 76px 88px 104px;
+  gap: 8px;
+  padding: 10px 16px;
+}
+
+@media (min-width: 1024px) and (max-width: 1535px) {
+  .pos-cart-grid {
+    grid-template-columns: 32px 32px minmax(120px, 1fr) 64px 78px minmax(88px, 96px);
+    gap: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .pos-cart-grid > :last-child {
+    font-size: 14px !important;
+  }
+}

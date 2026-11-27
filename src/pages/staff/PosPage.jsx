@@ -1404,11 +1404,8 @@ export function PosPage() {
 
         {/* Cart Table Header */}
         <div
+          className="pos-cart-grid"
           style={{
-            display: 'grid',
-            gridTemplateColumns: '36px 36px minmax(170px, 1fr) 76px 88px 104px',
-            gap: 8,
-            padding: '10px 16px',
             borderBottom: '1px solid hsl(214 25% 89%)',
             background: 'hsl(214 30% 96%)',
             color: 'hsl(215 16% 55%)',
@@ -1445,11 +1442,8 @@ export function PosPage() {
             activeTab.items.map((item, idx) => (
               <div
                 key={item.stockItemId}
+                className="pos-cart-grid"
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '36px 36px minmax(170px, 1fr) 76px 88px 104px',
-                  gap: 8,
-                  padding: '10px 16px',
                   alignItems: 'center',
                   borderBottom: '1px solid hsl(214 25% 91%)',
                   transition: 'background 0.15s',
@@ -1625,11 +1619,11 @@ export function PosPage() {
             </div>
 
             {/* Total */}
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-500">
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+              <span className="min-w-0 text-right text-xs text-slate-500">
                 {t('subtotalAmount', 'Tổng tiền hàng')} <span className="text-slate-700 font-semibold">({totalItemCount} sp)</span>:
               </span>
-              <span className="text-xl font-black text-slate-800 money tracking-tight">
+              <span className="shrink-0 whitespace-nowrap text-xl font-black text-slate-800 money tracking-tight">
                 {formatVND(subtotalAmount)}
               </span>
             </div>
@@ -1639,7 +1633,7 @@ export function PosPage() {
 
       {/* ─── RIGHT COLUMN: CATALOG + CHECKOUT (45%) ─── */}
       <div
-        className="w-full min-w-0 lg:w-[580px] xl:w-[660px] 2xl:w-[740px] flex flex-col overflow-hidden shrink-0 rounded-2xl border border-white/80"
+        className="w-full min-w-0 lg:w-[42%] 2xl:w-[740px] flex flex-col overflow-hidden shrink-0 rounded-2xl border border-white/80"
         style={{ background: '#fff', boxShadow: '0 2px 12px rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.04)' }}
       >
         {/* Product Search */}
