@@ -32,6 +32,8 @@ import { useAuthStore } from '../../store/authStore';
 import { canCancelOrder, canViewOrderFinancialSummary, isStaff } from '../../config/permissions.config';
 
 import { docSoThanhChu } from '../../utils/numberToWordsVN';
+import { formatVND, formatDateVN } from '../../utils/formatters';
+import { LoadingState, ErrorState } from '../../components/common/StandardUI';
 
 import { useTranslation } from '../../i18n/useTranslation';
 
@@ -94,14 +96,6 @@ function safeNum(val) {
   const n = Number(val);
 
   return isNaN(n) ? 0 : n;
-
-}
-
-
-
-function formatVND(n) {
-
-  return safeNum(n).toLocaleString('vi-VN') + ' đ';
 
 }
 
@@ -294,6 +288,8 @@ export function OrdersPage() {
     timeframeCounts: backendTimeframeCounts,
 
     isLoading,
+
+    error: ordersError,
 
     fetchOrders,
 
@@ -3107,6 +3103,23 @@ export function OrdersPage() {
 
       {/* Orders Table */}
 
+      {ordersError && filteredOrders.length > 0 && (
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs text-red-700">
+          <div className="flex items-center gap-2 font-medium">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+            <span>{ordersError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => loadOrders()}
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1 font-bold text-red-700 hover:bg-red-100 transition-colors shrink-0"
+          >
+            <RefreshCw className="w-3 h-3" />
+            {isEn ? 'Retry' : 'Thử lại'}
+          </button>
+        </div>
+      )}
+
       <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)]">
 
         <div className="overflow-x-auto">
@@ -3125,7 +3138,7 @@ export function OrdersPage() {
 
                 <th className="py-3 px-3.5 whitespace-nowrap">{isEn ? 'Payment' : 'Thanh toán'}</th>
 
-                <th className="py-3 px-3.5 text-center whitespace-nowrap">{isEn ? 'Quantity' : 'Số lượng'}</th>
+                <th className="py-3 px-3.5 text-right whitespace-nowrap">{isEn ? 'Quantity' : 'Số lượng'}</th>
 
                 <th className="py-3 px-3.5 text-right whitespace-nowrap">{isEn ? 'Total' : 'Tổng tiền'}</th>
 
@@ -3139,7 +3152,41 @@ export function OrdersPage() {
 
             <tbody className="divide-y divide-slate-100">
 
-              {filteredOrders.length === 0 ? (
+              {isLoading && filteredOrders.length === 0 ? (
+
+                <tr>
+
+                  <td colSpan={8}>
+
+                    <LoadingState message={isEn ? 'Loading orders...' : 'Đang tải danh sách đơn hàng...'} />
+
+                  </td>
+
+                </tr>
+
+              ) : ordersError && filteredOrders.length === 0 ? (
+
+                <tr>
+
+                  <td colSpan={8}>
+
+                    <ErrorState
+
+                      title={isEn ? 'Unable to load orders' : 'Không thể tải danh sách đơn hàng'}
+
+                      message={ordersError}
+
+                      onRetry={() => loadOrders()}
+
+                      retryLabel={isEn ? 'Retry' : 'Thử lại'}
+
+                    />
+
+                  </td>
+
+                </tr>
+
+              ) : filteredOrders.length === 0 ? (
 
                 <tr>
 
@@ -3153,29 +3200,61 @@ export function OrdersPage() {
 
                     <p className="font-bold text-sm text-slate-700">
 
-                      {isEn ? 'No orders found.' : 'Không tìm thấy đơn hàng nào.'}
+                      {(Boolean(searchQuery.trim()) || selectedPaymentMethod !== 'ALL')
+
+                        ? (isEn ? 'No matching orders found.' : 'Không có đơn hàng phù hợp với bộ lọc.')
+
+                        : activeTab === 'TODAY'
+
+                          ? (isEn ? 'No orders today yet.' : 'Hôm nay chưa có đơn hàng nào.')
+
+                          : (isEn ? 'No orders in this period.' : 'Chưa có đơn hàng nào trong khoảng thời gian này.')}
 
                     </p>
 
                     <p className="text-xs text-slate-400 mt-1">
 
-                      {isEn ? 'You can create a new order or sell at the POS counter.' : 'Bạn có thể tạo đơn hàng mới hoặc bán tại quầy POS.'}
+                      {(Boolean(searchQuery.trim()) || selectedPaymentMethod !== 'ALL')
+
+                        ? (isEn ? 'Try adjusting your search keyword or payment filter.' : 'Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc thanh toán.')
+
+                        : (isEn ? 'You can create a new order or sell at the POS counter.' : 'Bạn có thể tạo đơn hàng mới hoặc bán tại quầy POS.')}
 
                     </p>
 
                     <div className="mt-4 flex items-center justify-center gap-2">
 
-                      <button
+                      {(Boolean(searchQuery.trim()) || selectedPaymentMethod !== 'ALL') ? (
 
-                        onClick={() => navigate('/pos')}
+                        <button
 
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 shadow-md shadow-blue-500/20 active:scale-95 transition-all"
+                          type="button"
 
-                      >
+                          onClick={() => { clearSearch(); setSelectedPaymentMethod('ALL'); }}
 
-                        <ShoppingCart className="w-3.5 h-3.5" /> {isEn ? 'Open POS Counter' : 'Mở quầy POS'}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 shadow-md shadow-blue-500/20 active:scale-95 transition-all"
 
-                      </button>
+                        >
+
+                          <X className="w-3.5 h-3.5" /> {isEn ? 'Clear filters' : 'Xóa bộ lọc'}
+
+                        </button>
+
+                      ) : (
+
+                        <button
+
+                          onClick={() => navigate('/pos')}
+
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 shadow-md shadow-blue-500/20 active:scale-95 transition-all"
+
+                        >
+
+                          <ShoppingCart className="w-3.5 h-3.5" /> {isEn ? 'Open POS Counter' : 'Mở quầy POS'}
+
+                        </button>
+
+                      )}
 
                     </div>
 
@@ -3237,7 +3316,7 @@ export function OrdersPage() {
 
                       {/* Thời gian */}
 
-                      <td className="py-3 px-3.5 whitespace-nowrap">
+                      <td className="py-3 px-3.5 whitespace-nowrap tabular-nums">
 
                         <div className="flex flex-col">
 
@@ -3245,13 +3324,13 @@ export function OrdersPage() {
 
                             <Clock className="w-3 h-3 text-slate-400" />
 
-                            {new Date(ord.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            {ord.createdAt ? new Date(ord.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' }) : '—'}
 
                           </span>
 
                           <span className="text-[11px] text-slate-400 font-medium pl-4">
 
-                            {new Date(ord.createdAt).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')}
+                            {formatDateVN(ord.createdAt)}
 
                           </span>
 
@@ -3293,7 +3372,7 @@ export function OrdersPage() {
 
                       {/* Số lượng */}
 
-                      <td className="py-3 px-3.5 text-center whitespace-nowrap">
+                      <td className="py-3 px-3.5 text-right whitespace-nowrap tabular-nums">
 
                         <span className="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold text-xs whitespace-nowrap">
 
@@ -3317,9 +3396,9 @@ export function OrdersPage() {
 
                       {/* Tổng tiền */}
 
-                      <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                      <td className="py-3 px-3.5 text-right whitespace-nowrap tabular-nums">
 
-                        <span className="font-black text-slate-900 text-sm tracking-tight font-sans whitespace-nowrap">
+                        <span className="font-black text-slate-900 text-sm tracking-tight font-sans whitespace-nowrap tabular-nums">
 
                           {formatVND(ord.netAmount ?? ord.totalAmount)}
 
