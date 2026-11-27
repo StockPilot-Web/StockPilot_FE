@@ -1261,10 +1261,13 @@ export function ProductsPage() {
     try {
       let finalImageUrl = editForm.imageUrl.trim();
       if (finalImageUrl.startsWith("data:image/")) {
+        setIsUploadingImage(true);
         try {
           finalImageUrl = await uploadBase64ToCloudinary(finalImageUrl);
         } catch (uploadErr) {
-          console.warn("Upload base64 to Cloudinary failed:", uploadErr);
+          throw new Error(uploadErr?.message || "Không thể tải ảnh lên");
+        } finally {
+          setIsUploadingImage(false);
         }
       }
 
@@ -2274,28 +2277,15 @@ export function ProductsPage() {
                           accept="image/*"
                           disabled={isUploadingImage}
                           style={{ display: "none" }}
-                          onChange={async (e) => {
+                          onChange={(e) => {
                             const file = e.target.files?.[0];
-                            if (!file) return;
-                            setIsUploadingImage(true);
-                            try {
-                              const cloudUrl = await uploadImageToCloudinary(file);
-                              setEditForm((prev) => ({ ...prev, imageUrl: cloudUrl }));
-                              toast({
-                                type: "success",
-                                title: "Tải ảnh thành công",
-                                message: "Ảnh đã được tải lên!",
-                              });
-                            } catch (uploadErr) {
-                              toast({
-                                type: "error",
-                                title: "Lỗi tải ảnh",
-                                message: uploadErr?.message || "Không thể tải ảnh lên",
-                              });
-                            } finally {
-                              setIsUploadingImage(false);
-                              e.target.value = "";
-                            }
+                            if (!file || !file.type.startsWith("image/")) return;
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              setEditForm((prev) => ({ ...prev, imageUrl: ev.target.result }));
+                            };
+                            reader.readAsDataURL(file);
+                            e.target.value = "";
                           }}
                         />
                       </label>

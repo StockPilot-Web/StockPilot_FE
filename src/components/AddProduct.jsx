@@ -155,27 +155,16 @@ export function AddProduct({ onBack }) {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
-  const handleImageFile = async (file) => {
+  const handleImageFile = (file) => {
     if (!file || !file.type.startsWith("image/")) return;
     setImageFile(file);
+    setUploadedUrl(null);
     setUploadError(null);
 
-    // Hiển thị preview tức thì
+    // Hiển thị preview tức thì; chỉ tải lên Cloudinary khi người dùng ấn Lưu sản phẩm
     const reader = new FileReader();
     reader.onload = (e) => setImagePreview(e.target.result);
     reader.readAsDataURL(file);
-
-    // Tải ảnh lên Cloudinary
-    setIsUploading(true);
-    try {
-      const url = await uploadImageToCloudinary(file);
-      setUploadedUrl(url);
-    } catch (err) {
-      console.warn("Lỗi upload Cloudinary:", err);
-      setUploadError(err?.message || "Không thể tải ảnh lên");
-    } finally {
-      setIsUploading(false);
-    }
   };
 
   const handleDrop = (e) => {
