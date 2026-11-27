@@ -19,6 +19,17 @@ export const usePricingStore = create((set, get) => ({
         apiClient.get('/pricing/history'),
       ]);
 
+      const extractErr = (reason, fallback) =>
+        reason?.response?.data?.error?.message || reason?.message || fallback;
+
+      const failedParts = [];
+      if (resRecs.status === 'rejected') {
+        failedParts.push(`Đề xuất giá (/pricing): ${extractErr(resRecs.reason, 'Lỗi kết nối')}`);
+      }
+      if (resHist.status === 'rejected') {
+        failedParts.push(`Lịch sử giá (/pricing/history): ${extractErr(resHist.reason, 'Lỗi kết nối')}`);
+      }
+
       let mapped = [];
       if (resRecs.status === 'fulfilled') {
         const payload = resRecs.value.data?.data || resRecs.value.data || [];
@@ -72,10 +83,15 @@ export const usePricingStore = create((set, get) => ({
         }));
       }
 
-      set({ recommendations: mapped, history, isLoading: false });
+      set({
+        recommendations: resRecs.status === 'fulfilled' ? mapped : get().recommendations,
+        history: resHist.status === 'fulfilled' ? history : get().history,
+        isLoading: false,
+        error: failedParts.length ? failedParts.join(' | ') : null,
+      });
 
-      // If no recommendations exist, trigger automatic initial calculation
-      if (mapped.length === 0 && !get().isCalculating) {
+      // If no recommendations exist and /pricing succeeded, trigger automatic initial calculation
+      if (resRecs.status === 'fulfilled' && mapped.length === 0 && !get().isCalculating) {
         get().triggerRecalculate({ background: true });
       }
     } catch (err) {

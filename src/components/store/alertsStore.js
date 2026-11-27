@@ -38,18 +38,27 @@ export const useAlertsStore = create((set, get) => ({
         apiGetAlertStats(),
       ]);
 
-      let items = [];
-      if (data.status === 'fulfilled') {
-        const raw = data.value;
-        items = Array.isArray(raw) ? raw : (raw.items || raw.data || []);
+      const extractErr = (reason, fallback) =>
+        reason?.response?.data?.error?.message || reason?.message || fallback;
+
+      if (data.status === 'rejected') {
+        const msg = extractErr(data.reason, 'Không thể tải danh sách cảnh báo');
+        set({ error: msg, isLoading: false });
+        return;
       }
+
+      const raw = data.value;
+      const items = Array.isArray(raw) ? raw : (raw.items || raw.data || []);
 
       let stats = get().stats;
+      let statsWarning = null;
       if (statsData.status === 'fulfilled' && statsData.value) {
         stats = statsData.value;
+      } else if (statsData.status === 'rejected') {
+        statsWarning = extractErr(statsData.reason, 'Không tải được thống kê cảnh báo');
       }
 
-      set({ alerts: items, stats, isLoading: false });
+      set({ alerts: items, stats, isLoading: false, error: statsWarning });
 
       // If store has never run analysis and has 0 alerts, run a background recalculate (owner only: staff get 403)
       if (items.length === 0 && !get().isRecalculating && mayRunEngine()) {
