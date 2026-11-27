@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import readXlsxFile from 'read-excel-file/browser';
 import {
-  Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2, Package, Receipt, LifeBuoy, ArrowLeft, Download, ShieldCheck,
+  Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2, Package, Receipt, LifeBuoy, ArrowLeft, ArrowRight, Download, ShieldCheck,
 } from 'lucide-react';
 import { useToast } from '../../components/common/Toast';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -104,9 +104,14 @@ const REQUIRED_HINT = {
   SALES: 'Bắt buộc: Mã hàng, Số lượng, Giá bán (hoặc Đơn giá), Thời gian bán. Mã hàng phải có sẵn trong StockPilot.',
 };
 
-function Step({ n, title, active, done, children }) {
+function Step({ n, title, active, done, id, stepRef, children }) {
   return (
-    <section className={`${ui.card} p-5 transition-opacity ${active ? '' : 'opacity-60'}`}>
+    <section
+      id={id}
+      ref={stepRef}
+      tabIndex="-1"
+      className={`${ui.card} p-5 transition-opacity scroll-mt-24 ${active ? '' : 'opacity-60'}`}
+    >
       <div className="flex items-center gap-2.5 mb-4">
         <span
           className={`w-6 h-6 rounded-full text-[12px] font-semibold flex items-center justify-center ${
@@ -306,6 +311,16 @@ export function ImportDataPage() {
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState('');
+  const step2Ref = useRef(null);
+  const step3Ref = useRef(null);
+  const uploadInputRef = useRef(null);
+
+  const focusStep = (stepRef, selector) => {
+    const step = stepRef.current;
+    if (!step) return;
+    step.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => step.querySelector(selector)?.focus(), 0);
+  };
 
   const costMatch = useMemo(() => {
     if (!costSheet || !parsed || kind !== IMPORT_KINDS.PRODUCTS || !parsed.detection?.kind) return null;
@@ -435,6 +450,11 @@ export function ImportDataPage() {
     }
   };
 
+  const handleCheckAndFocus = async () => {
+    await handleCheck();
+    focusStep(step3Ref, 'button:not([disabled])');
+  };
+
   // Loại các dòng lỗi (vd. mã hàng chưa có) rồi kiểm tra lại, để phần còn lại vẫn nhập được.
   const excludeErrorRowsAndRecheck = () => {
     const next = new Set(excludedRows);
@@ -508,7 +528,7 @@ export function ImportDataPage() {
       <div className="grid xl:grid-cols-[minmax(0,1fr)_340px] gap-5 items-start">
         {/* Các bước */}
         <div className="space-y-4 min-w-0">
-          <Step n={1} title={isEn ? 'Select data type' : 'Chọn loại dữ liệu'} active done={Boolean(parsed)}>
+          <Step n={1} title={isEn ? 'Select data type' : 'Chọn loại dữ liệu'} active done={Boolean(parsed)} id="import-step-1">
             <div className="grid sm:grid-cols-2 gap-3">
               {[
                 {
@@ -553,9 +573,18 @@ export function ImportDataPage() {
                   : 'Nhập sản phẩm trước: lịch sử bán hàng chỉ ghép được với mã hàng đã có trong StockPilot.'}
               </p>
             )}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#E5E7EB] pt-4">
+              <p className="text-[13px] text-[#64748B]">
+                {isEn ? 'Next: upload the exported Excel or CSV file.' : 'Bước tiếp theo: tải file Excel hoặc CSV đã xuất lên.'}
+              </p>
+              <button type="button" onClick={() => focusStep(step2Ref, 'input[type="file"]')} className={`${ui.btnSecondary} min-h-10`}>
+                {isEn ? 'Continue: upload file' : 'Tiếp tục: Tải file'}
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </Step>
 
-          <Step n={2} title={isEn ? 'Upload file' : 'Tải file lên'} active done={step2Done}>
+          <Step n={2} title={isEn ? 'Upload file' : 'Tải file lên'} active done={step2Done} id="import-step-2" stepRef={step2Ref}>
             <label
               className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed border-[#CBD5E1] hover:border-[#3B82F6] hover:bg-blue-50/30 cursor-pointer text-center transition-colors"
               onDragOver={(e) => e.preventDefault()}
@@ -565,21 +594,23 @@ export function ImportDataPage() {
               }}
             >
               {busy === 'read' ? <Loader2 className="w-7 h-7 animate-spin text-[#3B82F6]" /> : <Upload className="w-7 h-7 text-[#94A3B8]" />}
+              <span className={`${ui.btnPrimary} pointer-events-none min-h-10`}>
+                {fileName ? (isEn ? 'Choose another file' : 'Chọn file khác') : (isEn ? 'Choose file' : 'Chọn file')}
+              </span>
               <span className="text-[14px] text-[#334155]">
                 {fileName ? (
                   <span className="inline-flex items-center gap-1.5">
                     <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                     {fileName}
-                    <span className="text-[#3B82F6] ml-1">{isEn ? '· Choose another file' : '· Chọn file khác'}</span>
                   </span>
                 ) : (
-                  isEn ? 'Drag and drop file here or click to browse' : 'Kéo thả file vào đây hoặc bấm để chọn'
+                  isEn ? 'or drag and drop the file here' : 'hoặc kéo thả file vào đây'
                 )}
               </span>
               <span className="text-[12px] text-[#94A3B8]">
                 {isEn ? `Excel (.xlsx) or CSV · max ${MAX_FILE_MB} MB` : `Excel (.xlsx) hoặc CSV · tối đa ${MAX_FILE_MB} MB`}
               </span>
-              <input type="file" accept=".xlsx,.csv" className="sr-only" onChange={(e) => handleFile(e.target.files?.[0])} onClick={(e) => (e.target.value = '')} />
+              <input ref={uploadInputRef} type="file" accept=".xlsx,.csv" className="sr-only" onChange={(e) => handleFile(e.target.files?.[0])} onClick={(e) => (e.target.value = '')} />
             </label>
 
             {sheets.length > 1 && (
@@ -678,11 +709,23 @@ export function ImportDataPage() {
                     </ul>
                   </details>
                 )}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#E5E7EB] pt-4" role="status" aria-live="polite">
+                  <p className="text-[13px] text-[#475569]">
+                    {step2Done
+                      ? (isEn ? 'File is ready. Validate it against your store before importing.' : 'File đã sẵn sàng. Hãy kiểm tra với dữ liệu cửa hàng trước khi nhập.')
+                      : (isEn ? 'Fix the required columns above, then choose the file again.' : 'Hãy bổ sung các cột bắt buộc ở trên rồi chọn lại file.')}
+                  </p>
+                  <button type="button" onClick={handleCheckAndFocus} disabled={!step2Done || busy === 'check'} className={`${ui.btnPrimary} min-h-10`}>
+                    {busy === 'check' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    {isEn ? 'Continue: validate file' : 'Tiếp tục: Kiểm tra file'}
+                    {busy !== 'check' && <ArrowRight className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
               </div>
             )}
           </Step>
 
-          <Step n={3} title={isEn ? 'Review & import' : 'Kiểm tra và nhập'} active={step2Done} done={Boolean(result)}>
+          <Step n={3} title={isEn ? 'Review & import' : 'Kiểm tra và nhập'} active={step2Done} done={Boolean(result)} id="import-step-3" stepRef={step3Ref}>
             {kind === IMPORT_KINDS.PRODUCTS && (
               <div className="grid sm:grid-cols-3 gap-2 mb-4 text-[13px]">
                 {[
@@ -743,6 +786,12 @@ export function ImportDataPage() {
                 >
                   {isEn ? 'Include again' : 'Đưa lại vào'}
                 </button>
+              </p>
+            )}
+
+            {!step2Done && !preview && !result && (
+              <p className="mb-3 rounded-lg border border-[#E5E7EB] bg-slate-50 p-3 text-[13px] text-[#64748B]" role="status">
+                {isEn ? 'Complete Step 2 with a valid file to unlock validation and import.' : 'Hoàn tất Bước 2 bằng một file hợp lệ để mở nút kiểm tra và nhập dữ liệu.'}
               </p>
             )}
 

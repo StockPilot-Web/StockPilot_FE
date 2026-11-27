@@ -156,7 +156,15 @@ export function AddProduct({ onBack }) {
   };
 
   const handleImageFile = (file) => {
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setUploadError(isEn ? "Invalid file type. Please choose a JPG, PNG, WEBP, GIF or AVIF image." : "File không hợp lệ. Vui lòng chọn ảnh JPG, PNG, WEBP, GIF hoặc AVIF.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError(isEn ? "Image is larger than 10 MB. Please choose a smaller image." : "Ảnh vượt quá giới hạn 10 MB. Vui lòng chọn ảnh nhỏ hơn.");
+      return;
+    }
     setImageFile(file);
     setUploadedUrl(null);
     setUploadError(null);
@@ -200,7 +208,11 @@ export function AddProduct({ onBack }) {
     if (form.costPrice && form.salePrice && parseInt(form.salePrice) < parseInt(form.costPrice)) {
       errs.salePrice = isEn ? "Selling price cannot be lower than cost price" : "Giá bán không được thấp hơn giá nhập";
     }
-    if (!form.stock) errs.stock = isEn ? "Please enter stock quantity" : "Vui lòng nhập số lượng tồn kho";
+    if (form.stock === "") {
+      errs.stock = isEn ? "Please enter stock quantity" : "Vui lòng nhập số lượng tồn kho";
+    } else if (!/^\d+$/.test(String(form.stock).trim())) {
+      errs.stock = isEn ? "Stock quantity must be a non-negative integer" : "Số lượng tồn kho phải là số nguyên không âm";
+    }
     return errs;
   };
 

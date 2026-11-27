@@ -67,9 +67,11 @@ export async function apiGetMe() {
   return normalizeUser(data.data);
 }
 
-// PATCH /auth/me — hiện chỉ đổi được họ tên (email là định danh đăng nhập, không đổi ở đây).
-export async function apiUpdateMe({ fullName }) {
-  const { data } = await apiClient.patch('/auth/me', { fullName });
+// PATCH /auth/me — cập nhật họ tên và số điện thoại cửa hàng trong một request.
+export async function apiUpdateMe({ fullName, phone }) {
+  const payload = { fullName };
+  if (phone !== undefined) payload.phone = phone;
+  const { data } = await apiClient.patch('/auth/me', payload);
   return data.data;
 }
 

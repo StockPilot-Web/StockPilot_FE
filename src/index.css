@@ -107,6 +107,25 @@
     letter-spacing: -0.02em;
   }
 
+  /* Data tables keep their columns readable on narrow admin viewports.
+     The focusable region makes horizontal scrolling discoverable by keyboard users. */
+  .admin-ui .admin-table-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+    box-shadow: inset -14px 0 14px -16px hsl(var(--foreground) / 0.45);
+  }
+  .admin-ui .admin-table-scroll:focus-visible {
+    outline-offset: -2px;
+  }
+  .admin-ui .admin-table-scroll table {
+    min-width: 720px;
+  }
+  @media (max-width: 640px) {
+    .admin-ui .admin-table-scroll table {
+      min-width: 640px;
+    }
+  }
+
   *:focus-visible {
     outline: 2px solid hsl(var(--ring) / 0.7);
     outline-offset: 2px;
@@ -409,4 +428,44 @@
 }
 .pos-qty-input[type=number] {
   -moz-appearance: textfield;
+}
+
+/* POS category chips remain horizontally scrollable without exposing a scrollbar. */
+.pos-category-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.pos-category-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* POS cart table: keep the money column visible on 14-inch laptop widths. */
+.pos-cart-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 36px 36px minmax(0, 1fr) 76px 88px 104px;
+  gap: 8px;
+  padding: 10px 16px;
+}
+
+.pos-cart-grid > * {
+  min-width: 0;
+}
+
+.pos-cart-grid > :last-child {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+@media (min-width: 1024px) and (max-width: 1535px) {
+  .pos-cart-grid {
+    grid-template-columns: 32px 32px minmax(0, 1fr) 64px 78px minmax(96px, 104px);
+    gap: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .pos-cart-grid > :last-child {
+    font-size: 10px !important;
+  }
 }

@@ -29,7 +29,7 @@ export const canViewProfit = (role) => !isStaff(role);
 export const canViewTotalInventoryValue = (role) => !isStaff(role);
 export const canViewFinancialCharts = (role) => !isStaff(role);
 
-export const canAddProduct = (role) => isOwner(role) || isStaff(role);
+export const canAddProduct = (role) => isOwner(role);
 export const canEditProduct = (role) => isOwner(role) || isStaff(role);
 export const canDeleteProduct = (role) => isOwner(role);
 export const canEditCostPrice = (role) => isOwner(role);

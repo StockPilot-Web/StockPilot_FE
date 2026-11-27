@@ -41,6 +41,16 @@ const REASON_KEY_LABELS = {
   stockoutScore: { vi: 'Điểm hết hàng', en: 'Stockout Score' },
   daysSinceLastSale: { vi: 'Số ngày chưa bán', en: 'Days Since Last Sale' },
   overstockScore: { vi: 'Điểm thừa hàng', en: 'Overstock Score' },
+  confidenceScore: { vi: 'Độ tin cậy dữ liệu', en: 'Data Confidence' },
+  confidenceLevel: { vi: 'Mức độ tin cậy', en: 'Confidence Level' },
+  historyDays: { vi: 'Số ngày dữ liệu', en: 'History Days' },
+  dataStatus: { vi: 'Chất lượng dữ liệu', en: 'Data Quality' },
+  daysOfCover: { vi: 'Số ngày tồn đủ bán', en: 'Days of Cover' },
+  safetyStock: { vi: 'Tồn an toàn', en: 'Safety Stock' },
+  highRiskThreshold: { vi: 'Ngưỡng rủi ro cao', en: 'High-Risk Threshold' },
+  criticalRiskThreshold: { vi: 'Ngưỡng rủi ro nghiêm trọng', en: 'Critical-Risk Threshold' },
+  engineVersion: { vi: 'Phiên bản phân tích', en: 'Engine Version' },
+  calculatedAt: { vi: 'Phân tích gần nhất', en: 'Last Analysis' },
   deadStockSeverity: { vi: 'Mức độ ứ đọng', en: 'Dead Stock Severity' },
   isSlowMoving: { vi: 'Bán chậm', en: 'Slow-Moving Flag' },
   salesCount: { vi: 'Lượt bán', en: 'Sales Count' },
@@ -57,7 +67,7 @@ const REASON_KEY_LABELS = {
 };
 
 // Trường nội bộ của quy trình xử lý (ai tiếp nhận/đóng, lúc nào): đã hiện ở dòng thời gian, không phải chỉ số.
-const HIDDEN_REASON_KEYS = new Set(['lifecycle']);
+const HIDDEN_REASON_KEYS = new Set(['lifecycle', 'auto', 'engineVersion']);
 
 /** Gom chỉ số từ reasonJson: mở các object lồng (vd. `overstock`) thành từng ô, bỏ trường nội bộ và giá trị trống. */
 function reasonMetrics(reason) {
@@ -157,10 +167,17 @@ function formatMetricKey(k, isEn) {
   return k.replace(/([A-Z])/g, ' $1').trim();
 }
 
-function formatMetricVal(v, isEn) {
+function formatMetricVal(v, isEn, key) {
   if (v === null || v === undefined || v === '') return '—';
   if (typeof v === 'boolean') return v ? (isEn ? '✓ Yes' : '✓ Có') : (isEn ? '✗ No' : '✗ Không');
   if (typeof v === 'string' && REASON_VAL_LABELS[v]) return isEn ? REASON_VAL_LABELS[v].en : REASON_VAL_LABELS[v].vi;
+  if (v === 'OK') return isEn ? 'Sufficient data' : 'Đủ dữ liệu';
+  if (v === 'INSUFFICIENT_DATA') return isEn ? 'Insufficient data' : 'Chưa đủ dữ liệu';
+  if (v === 'LOW') return isEn ? 'Low' : 'Thấp';
+  if (v === 'MEDIUM') return isEn ? 'Medium' : 'Trung bình';
+  if (v === 'HIGH') return isEn ? 'High' : 'Cao';
+  if (key === 'confidenceScore') return `${Number(v).toFixed(0)}%`;
+  if (key === 'calculatedAt') return fmtDate(v, isEn);
   if (typeof v === 'number') {
     if (Number.isNaN(v)) return '—';
     return Number.isInteger(v) ? formatNumber(v) : Number(v.toFixed(2));
@@ -168,6 +185,17 @@ function formatMetricVal(v, isEn) {
   if (Array.isArray(v)) return v.length ? v.map((x) => formatMetricVal(x, isEn)).join(', ') : '—';
   if (typeof v === 'object') return '—';
   return String(v);
+}
+
+function riskBand(score, reason, isEn) {
+  const s = Number(score || 0);
+  const low = Number(reason?.lowRiskThreshold ?? 25);
+  const high = Number(reason?.highRiskThreshold ?? 50);
+  const critical = Number(reason?.criticalRiskThreshold ?? 75);
+  if (s >= critical) return isEn ? 'Very High' : 'Rất cao';
+  if (s >= high) return isEn ? 'High' : 'Cao';
+  if (s >= low) return isEn ? 'Medium' : 'Trung bình';
+  return isEn ? 'Low' : 'Thấp';
 }
 
 function getMeta(type, isEn) {
@@ -383,7 +411,8 @@ function AlertDetailModal({ alert, onClose, onAcknowledge, onResolve, onAskAI, i
                 {displayTitle}
               </h3>
               <p style={{ fontSize: 11, color: '#64748b', margin: '3px 0 0' }}>
-                {isEn ? 'Decision Engine · Confidence: ' : 'Hệ thống phân tích · Tin cậy: '}{Math.round(conf)}%
+                 {isEn ? 'Decision Engine · Confidence: ' : 'Hệ thống phân tích · Độ tin cậy: '}{Math.round(conf)}%
+                 {reason.confidenceLevel ? ` (${formatMetricVal(reason.confidenceLevel, isEn)})` : ''}
               </p>
             </div>
           </div>
@@ -418,9 +447,7 @@ function AlertDetailModal({ alert, onClose, onAcknowledge, onResolve, onAskAI, i
               <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', marginBottom: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>{isEn ? 'Risk Severity Level' : 'Mức độ rủi ro'}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: riskColor(rs), marginLeft: 'auto' }}>
-                  {isEn
-                    ? (rs >= 80 ? 'Very High' : rs >= 60 ? 'High' : rs >= 40 ? 'Medium' : 'Low')
-                    : (rs >= 80 ? 'Rất cao' : rs >= 60 ? 'Cao' : rs >= 40 ? 'Trung bình' : 'Thấp')}
+                   {riskBand(rs, reason, isEn)}
                 </span>
               </div>
               <div style={{ height: 10, background: '#e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
@@ -442,7 +469,7 @@ function AlertDetailModal({ alert, onClose, onAcknowledge, onResolve, onAskAI, i
                     <span style={{ fontSize: 10, color: '#64748b', fontWeight: 500, display: 'block', marginBottom: 2 }}>
                       {formatMetricKey(k, isEn)}
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{formatMetricVal(v, isEn)}</span>
+                     <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{formatMetricVal(v, isEn, k)}</span>
                   </div>
                 ))}
               </div>

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Menu, Search, Bell, Sun, Moon, Globe, Check, CheckCheck,
   Store, Warehouse, ShieldCheck, AlertTriangle, Tag, Info, ChevronDown,
-  User, Boxes, LogOut, Settings, UserPlus, HelpCircle, X, Lock, Mail, Building2, ShoppingBag, Users
+  User, Boxes, LogOut, Settings, UserPlus, HelpCircle, X, Lock, Mail, Building2, ShoppingBag, Users, Package, LifeBuoy, ArrowRight
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuthStore } from '../store/authStore';
@@ -13,6 +13,7 @@ import { useUIStore } from '../store/uiStore';
 import { useTranslation } from '../../i18n/useTranslation';
 import { useToast } from '../common/Toast';
 import { Breadcrumbs } from './Breadcrumbs';
+import { ONBOARDING_OPEN_EVENT } from '../common/OnboardingGuide';
 import { apiGetNotifications, apiMarkNotificationRead, apiMarkAllNotificationsRead } from '../../services/analyticsService';
 import { normalizeRole } from '../../config/permissions.config';
 
@@ -126,6 +127,27 @@ export function Topbar() {
   const notificationRequestRef = useRef(false);
 
   const currentRole = normalizeRole(user?.role);
+
+  const helpTopics = currentRole === 'admin'
+    ? [
+        { icon: Users, title: isEn ? 'Manage users and permissions' : 'Quản lý người dùng và quyền', desc: isEn ? 'Create accounts, assign roles and control access.' : 'Tạo tài khoản, phân vai trò và kiểm soát quyền truy cập.', path: '/admin/users', action: isEn ? 'Open Users' : 'Mở Người dùng' },
+        { icon: Store, title: isEn ? 'Monitor stores' : 'Theo dõi cửa hàng', desc: isEn ? 'Review store status and operational information.' : 'Kiểm tra trạng thái và thông tin vận hành của cửa hàng.', path: '/admin/stores', action: isEn ? 'Open Stores' : 'Mở Cửa hàng' },
+        { icon: LifeBuoy, title: isEn ? 'Handle support requests' : 'Xử lý yêu cầu hỗ trợ', desc: isEn ? 'Receive, assign and respond to requests from stores.' : 'Tiếp nhận, phân công và phản hồi yêu cầu từ cửa hàng.', path: '/admin/support', action: isEn ? 'Open Support' : 'Mở Hỗ trợ' },
+        { icon: ShieldCheck, title: isEn ? 'Review security' : 'Kiểm tra bảo mật', desc: isEn ? 'Review unusual login activity and control records.' : 'Rà soát đăng nhập bất thường và nhật ký kiểm soát.', path: '/admin/security', action: isEn ? 'Open Security' : 'Mở Bảo mật' },
+      ]
+    : currentRole === 'warehouse_staff'
+    ? [
+        { icon: ShoppingBag, title: isEn ? 'Sell at the counter' : 'Bán hàng tại quầy', desc: isEn ? 'Create orders, scan products and confirm payments.' : 'Tạo đơn, quét sản phẩm và xác nhận thanh toán.', path: '/pos', action: isEn ? 'Open POS' : 'Mở POS' },
+        { icon: Boxes, title: isEn ? 'Process inventory' : 'Xử lý tồn kho', desc: isEn ? 'Check stock and follow inventory movements assigned to you.' : 'Kiểm tra tồn và theo dõi biến động kho được phân quyền.', path: '/inventory', action: isEn ? 'Open Inventory' : 'Mở Quản lý kho' },
+        { icon: Package, title: isEn ? 'Find products' : 'Tra cứu sản phẩm', desc: isEn ? 'Search product information and available stock.' : 'Tìm thông tin sản phẩm và số lượng tồn khả dụng.', path: '/products', action: isEn ? 'Open Products' : 'Mở Sản phẩm' },
+        { icon: LifeBuoy, title: isEn ? 'Request support' : 'Gửi yêu cầu hỗ trợ', desc: isEn ? 'Create a ticket when an operational issue needs help.' : 'Tạo phiếu khi có vấn đề vận hành cần được hỗ trợ.', path: '/support', action: isEn ? 'Open Support' : 'Mở Hỗ trợ' },
+      ]
+    : [
+        { icon: Settings, title: isEn ? 'Set up your store' : 'Thiết lập cửa hàng', desc: isEn ? 'Update store information, payments and notifications.' : 'Cập nhật thông tin cửa hàng, thanh toán và thông báo.', path: '/settings', action: isEn ? 'Open Settings' : 'Mở Cài đặt' },
+        { icon: Package, title: isEn ? 'Manage products and data' : 'Quản lý sản phẩm và dữ liệu', desc: isEn ? 'Add products or import products and sales history from Excel/CSV.' : 'Thêm sản phẩm hoặc nhập sản phẩm, lịch sử bán hàng từ Excel/CSV.', path: '/products', action: isEn ? 'Open Products' : 'Mở Sản phẩm' },
+        { icon: ShoppingBag, title: isEn ? 'Run daily sales' : 'Vận hành bán hàng hằng ngày', desc: isEn ? 'Create POS orders and follow order status.' : 'Tạo đơn POS và theo dõi trạng thái đơn hàng.', path: '/pos', action: isEn ? 'Open POS' : 'Mở POS' },
+        { icon: Boxes, title: isEn ? 'Control inventory' : 'Kiểm soát tồn kho', desc: isEn ? 'Review stock, movements and low-stock warnings.' : 'Theo dõi tồn, biến động kho và cảnh báo sắp hết hàng.', path: '/inventory', action: isEn ? 'Open Inventory' : 'Mở Quản lý kho' },
+      ];
 
   // Fetch notifications từ API thật (bảng notifications trong MySQL) - Chỉ áp dụng cho người dùng thuộc Store
   const fetchRealNotifications = async () => {
@@ -665,43 +687,50 @@ export function Topbar() {
       {/* MODAL 6: TRỢ GIÚP & HƯỚNG DẪN                                  */}
       {/* ============================================================== */}
       {helpModalOpen && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                   <HelpCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">{isEn ? 'Help & Documentation' : 'Trợ giúp & Hướng dẫn'}</h3>
-                  <p className="text-xs text-slate-400">{isEn ? 'Pilot AI operations support' : 'Hỗ trợ vận hành Pilot AI'}</p>
+                  <h3 className="text-base font-bold text-slate-900">{isEn ? 'Help center' : 'Trung tâm trợ giúp'}</h3>
+                  <p className="text-xs text-slate-500">{isEn ? 'Operational guidance for your role' : 'Hướng dẫn nghiệp vụ theo vai trò của bạn'}</p>
                 </div>
               </div>
-              <button onClick={() => setHelpModalOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
-                <X className="w-5 h-5" />
+              <button type="button" onClick={() => setHelpModalOpen(false)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label={isEn ? 'Close help center' : 'Đóng trung tâm trợ giúp'}>
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-2.5 my-4 text-xs text-slate-600">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <h4 className="font-bold text-slate-800 mb-1">{isEn ? '📘 Inventory Management Guide' : '📘 Hướng dẫn quản lý tồn kho'}</h4>
-                <p className="text-[11px] text-slate-500">{isEn ? 'How to set DOI thresholds, tied-up capital alerts, and optimize cashflow.' : 'Cách thiết lập chỉ số DOI, cảnh báo đọng vốn và tối ưu dòng tiền lưu động.'}</p>
-              </div>
-              {currentRole === 'store_owner' && (
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <h4 className="font-bold text-slate-800 mb-1">{isEn ? '🤖 Pilot AI Assistant' : '🤖 Trợ lý Pilot AI'}</h4>
-                <p className="text-[11px] text-slate-500">{isEn ? 'Click the floating button at bottom right or press ⌘K to query live store data.' : 'Bấm nút tròn góc dưới bên phải hoặc phím ⌘K để hỏi đáp số liệu với AI.'}</p>
-              </div>
-              )}
-              <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 text-blue-800">
-                <h4 className="font-bold mb-1">{isEn ? '💬 Technical Support' : '💬 Hỗ trợ kỹ thuật'}</h4>
-                <p className="text-[11px]">{isEn ? 'Open a ticket on the Support page; the StockPilot team replies there.' : 'Gửi yêu cầu ở trang Hỗ trợ; đội StockPilot sẽ trả lời ngay trong phiếu.'}</p>
-              </div>
+            <div className="space-y-2 px-5 py-4" role="list" aria-label={isEn ? 'Operational help topics' : 'Nhóm hướng dẫn nghiệp vụ'}>
+              {helpTopics.map(({ icon: TopicIcon, title, desc, path, action }) => (
+                <div key={path} className="flex items-center gap-3 rounded-xl border border-slate-200 px-3.5 py-3 transition-colors hover:border-blue-200 hover:bg-blue-50/40" role="listitem">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                    <TopicIcon className="h-4.5 w-4.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500">{desc}</p>
+                  </div>
+                  <button type="button" onClick={() => { setHelpModalOpen(false); navigate(path); }} className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {action}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
             </div>
 
-            <button onClick={() => setHelpModalOpen(false)} className="w-full py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm">
-              {isEn ? 'Got it' : 'Đã hiểu'}
-            </button>
+            <div className="flex flex-col gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <button type="button" onClick={() => { setHelpModalOpen(false); window.dispatchEvent(new CustomEvent(ONBOARDING_OPEN_EVENT)); }} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <HelpCircle className="h-4 w-4" />
+                {isEn ? 'Start guided tour again' : 'Mở lại hướng dẫn từng bước'}
+              </button>
+              <button type="button" onClick={() => setHelpModalOpen(false)} className="inline-flex min-h-10 items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {isEn ? 'Close' : 'Đóng'}
+              </button>
+            </div>
           </div>
         </div>,
         document.body
