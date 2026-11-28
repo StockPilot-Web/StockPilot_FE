@@ -12,10 +12,8 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { formatCategoryName } from '../../components/store/productStore';
 import { useEnterSearch } from '../../hooks/useEnterSearch';
 import { StockPilotAILogo } from '../../components/common/StockPilotAILogo';
-
-function formatVND(n) {
-  return Number(n || 0).toLocaleString('vi-VN') + ' đ';
-}
+import { formatVND, formatDateTimeVN } from '../../utils/formatters';
+import { LoadingState, ErrorState } from '../../components/common/StandardUI';
 
 function formatPricingReason(text, isEn) {
   if (!text || !isEn) return text || '';
@@ -63,6 +61,7 @@ export function PricingPage() {
     recommendations,
     history,
     isLoading,
+    error: pricingError,
     fetchRecommendations,
     triggerRecalculate,
     acceptRecommendation,
@@ -418,66 +417,94 @@ export function PricingPage() {
         <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
           <div className="p-4 border-b border-border bg-muted/20 flex justify-between items-center">
             <h3 className="font-bold text-sm text-foreground">
-              {isEn ? 'Price Decisions Audit Log' : 'Nhật ký quyết định giá (Price Decisions Log)'}
+              {isEn ? 'Price Decisions Audit Log' : 'Nhật ký quyết định giá'}
             </h3>
             <span className="text-xs text-muted-foreground">
               {isEn ? 'History of accepted, rejected, and modified prices' : 'Lưu trữ các thao tác phê duyệt, từ chối, chỉnh sửa giá'}
             </span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase tracking-wider font-semibold">
-                <tr>
-                  <th className="py-3 px-4">{isEn ? 'Time' : 'Thời gian'}</th>
-                  <th className="py-3 px-4">{isEn ? 'Product' : 'Sản phẩm'}</th>
-                  <th className="py-3 px-4">{isEn ? 'Old → New Price' : 'Giá cũ → Giá mới'}</th>
-                  <th className="py-3 px-4">{isEn ? 'Decision' : 'Quyết định'}</th>
-                  <th className="py-3 px-4">{isEn ? 'Actor' : 'Người thực hiện'}</th>
-                  <th className="py-3 px-4">{isEn ? 'Recorded Reason' : 'Lý do ghi nhận'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {history.map((h) => (
-                  <tr key={h.id} className="hover:bg-muted/30">
-                    <td className="py-3 px-4 text-muted-foreground font-mono">
-                      {new Date(h.decidedAt).toLocaleString(isEn ? 'en-US' : 'vi-VN')}
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-foreground">{h.productName}</td>
-                    <td className="py-3 px-4">
-                      <span className="line-through text-muted-foreground mr-1.5">{formatVND(h.oldPrice)}</span>
-                      <span className="font-bold text-blue-600">{formatVND(h.newPrice)}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                        h.decision === 'accepted'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : h.decision === 'modified'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}>
-                        {h.decision === 'accepted' ? (isEn ? 'Accepted' : 'Đã chấp nhận') : h.decision === 'modified' ? (isEn ? 'Modified' : 'Đã chỉnh sửa') : (isEn ? 'Rejected' : 'Đã từ chối')}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-foreground">{h.decidedBy === 'Chủ shop' ? (isEn ? 'Store Owner' : 'Chủ shop') : h.decidedBy}</td>
-                    <td className="py-3 px-4 text-muted-foreground max-w-xs truncate">{formatPricingReason(h.reason, isEn)}</td>
+          {pricingError && history.length === 0 ? (
+            <ErrorState
+              title={isEn ? 'Unable to load pricing history' : 'Không thể tải nhật ký quyết định giá'}
+              message={pricingError}
+              onRetry={() => fetchRecommendations()}
+              retryLabel={isEn ? 'Retry' : 'Thử lại'}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase tracking-wider font-semibold">
+                  <tr>
+                    <th className="py-3 px-4 whitespace-nowrap">{isEn ? 'Time' : 'Thời gian'}</th>
+                    <th className="py-3 px-4 whitespace-nowrap">{isEn ? 'Product' : 'Sản phẩm'}</th>
+                    <th className="py-3 px-4 text-right whitespace-nowrap">{isEn ? 'Old → New Price' : 'Giá cũ → Giá mới'}</th>
+                    <th className="py-3 px-4 whitespace-nowrap">{isEn ? 'Decision' : 'Quyết định'}</th>
+                    <th className="py-3 px-4 whitespace-nowrap">{isEn ? 'Actor' : 'Người thực hiện'}</th>
+                    <th className="py-3 px-4 whitespace-nowrap">{isEn ? 'Recorded Reason' : 'Lý do ghi nhận'}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {history.map((h) => (
+                    <tr key={h.id} className="hover:bg-muted/30">
+                      <td className="py-3 px-4 text-muted-foreground font-mono tabular-nums whitespace-nowrap">
+                        {formatDateTimeVN(h.decidedAt, { isEn })}
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-foreground">{h.productName}</td>
+                      <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                        <span className="line-through text-muted-foreground mr-1.5">{formatVND(h.oldPrice)}</span>
+                        <span className="font-bold text-blue-600">{formatVND(h.newPrice)}</span>
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                          h.decision === 'accepted'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : h.decision === 'modified'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {h.decision === 'accepted' ? (isEn ? 'Accepted' : 'Đã chấp nhận') : h.decision === 'modified' ? (isEn ? 'Modified' : 'Đã chỉnh sửa') : (isEn ? 'Rejected' : 'Đã từ chối')}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-foreground whitespace-nowrap">{h.decidedBy === 'Chủ shop' ? (isEn ? 'Store Owner' : 'Chủ shop') : h.decidedBy}</td>
+                      <td className="py-3 px-4 text-muted-foreground max-w-xs truncate">{formatPricingReason(h.reason, isEn)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       ) : (
         /* Recommendations List */
         <div className="space-y-4">
+          {pricingError && filteredRecommendations.length > 0 && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs text-red-700">
+              <div className="flex items-center gap-2 font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                <span>{pricingError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => fetchRecommendations()}
+                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1 font-bold text-red-700 hover:bg-red-100 transition-colors shrink-0"
+              >
+                <RefreshCw className="w-3 h-3" />
+                {isEn ? 'Retry' : 'Thử lại'}
+              </button>
+            </div>
+          )}
           {isLoading ? (
-            <div className="bg-card border border-border rounded-xl p-12 text-center">
-              <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-foreground">
-                {isEn ? 'Loading price recommendations from system...' : 'Đang tải đề xuất giá từ hệ thống...'}
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {isEn ? 'Synchronizing pricing database from SQL.' : 'Đang đồng bộ dữ liệu định giá từ cơ sở dữ liệu.'}
-              </p>
+            <div className="bg-card border border-border rounded-xl">
+              <LoadingState message={isEn ? 'Loading price recommendations from system...' : 'Đang tải đề xuất giá từ hệ thống...'} />
+            </div>
+          ) : pricingError && filteredRecommendations.length === 0 ? (
+            <div className="bg-card border border-red-200 rounded-xl">
+              <ErrorState
+                title={isEn ? 'Unable to load pricing recommendations' : 'Không thể tải dữ liệu gợi ý giá'}
+                message={pricingError}
+                onRetry={() => fetchRecommendations()}
+                retryLabel={isEn ? 'Retry' : 'Thử lại'}
+              />
             </div>
           ) : filteredRecommendations.length === 0 ? (
             <div className="bg-card border border-border rounded-xl p-12 text-center">
@@ -485,12 +512,12 @@ export function PricingPage() {
                 <Tag className="w-6 h-6" />
               </div>
               <h3 className="text-base font-semibold text-foreground">
-                {isEn ? 'No price recommendations in database' : 'Không có đề xuất giá nào trong cơ sở dữ liệu'}
+                {isEn ? 'No price recommendations found' : 'Không có đề xuất giá nào'}
               </h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
                 {isEn
-                  ? 'Currently no price change records in database. You can trigger a new scan to recalculate the entire warehouse catalog.'
-                  : 'Hiện tại chưa có bản ghi đề xuất thay đổi giá nào trong SQL. Bạn có thể nhấn nút quét để thuật toán phân tích lại toàn bộ kho hàng hiện có.'}
+                  ? 'Currently no price change records in the system. You can trigger a new scan to recalculate the entire warehouse catalog.'
+                  : 'Hiện tại chưa có đề xuất thay đổi giá nào trong hệ thống. Bạn có thể nhấn nút quét để thuật toán phân tích lại toàn bộ kho hàng hiện có.'}
               </p>
               <button
                 onClick={async () => {

@@ -12,6 +12,8 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { useAuthStore } from '../../components/store/authStore';
 import { canResolveAlerts, canRunDecisionEngine, canUseAiAssistant } from '../../config/permissions.config';
 import { useEnterSearch } from '../../hooks/useEnterSearch';
+import { formatVND, formatDateTimeVN, formatNumber } from '../../utils/formatters';
+import { ErrorState } from '../../components/common/StandardUI';
 
 /* ═══ HELPERS ════════════════════════════════════════════════════ */
 const TYPE_META = {
@@ -169,6 +171,7 @@ function formatMetricKey(k, isEn) {
 }
 
 function formatMetricVal(v, isEn, key) {
+  if (v === null || v === undefined || v === '') return '—';
   if (typeof v === 'boolean') return v ? (isEn ? '✓ Yes' : '✓ Có') : (isEn ? '✗ No' : '✗ Không');
   if (typeof v === 'string' && REASON_VAL_LABELS[v]) return isEn ? REASON_VAL_LABELS[v].en : REASON_VAL_LABELS[v].vi;
   if (v === 'OK') return isEn ? 'Sufficient data' : 'Đủ dữ liệu';
@@ -178,9 +181,12 @@ function formatMetricVal(v, isEn, key) {
   if (v === 'HIGH') return isEn ? 'High' : 'Cao';
   if (key === 'confidenceScore') return `${Number(v).toFixed(0)}%`;
   if (key === 'calculatedAt') return fmtDate(v, isEn);
-  if (typeof v === 'number') return Number(v.toFixed(2));
-  if (Array.isArray(v)) return v.map((x) => formatMetricVal(x, isEn)).join(', ');
-  if (v && typeof v === 'object') return '—';
+  if (typeof v === 'number') {
+    if (Number.isNaN(v)) return '—';
+    return Number.isInteger(v) ? formatNumber(v) : Number(v.toFixed(2));
+  }
+  if (Array.isArray(v)) return v.length ? v.map((x) => formatMetricVal(x, isEn)).join(', ') : '—';
+  if (typeof v === 'object') return '—';
   return String(v);
 }
 
@@ -212,10 +218,7 @@ function riskColor(s) {
 }
 
 function fmtDate(iso, isEn) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString(isEn ? 'en-US' : 'vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-  });
+  return formatDateTimeVN(iso, { isEn });
 }
 
 /* ═══ RISK RING ══════════════════════════════════════════════════ */
@@ -429,8 +432,8 @@ function AlertDetailModal({ alert, onClose, onAcknowledge, onResolve, onAskAI, i
               {[
                 { label: isEn ? 'Product Name' : 'Tên sản phẩm', val: alert.stockItem?.name || '—' },
                 { label: isEn ? 'SKU' : 'Mã SP', val: alert.stockItem?.sku || '—', mono: true },
-                { label: isEn ? 'Cost Price' : 'Giá nhập', val: alert.stockItem?.costPrice != null ? Number(alert.stockItem.costPrice).toLocaleString('vi-VN') + ' đ' : '—' },
-                { label: isEn ? 'Selling Price' : 'Giá bán', val: alert.stockItem?.sellingPrice != null ? Number(alert.stockItem.sellingPrice).toLocaleString('vi-VN') + ' đ' : '—' },
+                { label: isEn ? 'Cost Price' : 'Giá nhập', val: alert.stockItem?.costPrice != null ? formatVND(alert.stockItem.costPrice) : '—' },
+                { label: isEn ? 'Selling Price' : 'Giá bán', val: alert.stockItem?.sellingPrice != null ? formatVND(alert.stockItem.sellingPrice) : '—' },
               ].map(item => (
                 <div key={item.label}>
                   <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500, display: 'block', marginBottom: 2 }}>{item.label}</span>
@@ -569,7 +572,7 @@ export function AlertsPage() {
   const { language } = useTranslation();
   const isEn = language === 'en';
 
-  const { alerts, isLoading, isRecalculating, acknowledgeAlert, resolveAlert, fetchAlerts, recalculate } = useAlertsStore();
+  const { alerts, isLoading, isRecalculating, error: alertsError, acknowledgeAlert, resolveAlert, fetchAlerts, recalculate } = useAlertsStore();
   const role = useAuthStore((state) => state.user?.role);
   const canResolve = canResolveAlerts(role);
   const canAnalyze = canRunDecisionEngine(role);
@@ -998,12 +1001,34 @@ export function AlertsPage() {
       </p>
 
       {/* ALERT LIST */}
+      {alertsError && alerts.length > 0 && (
+        <div style={{ borderRadius: 12, border: '1px solid #fecaca', background: '#fef2f2', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#b91c1c' }}>{alertsError}</span>
+          <button
+            type="button"
+            onClick={() => fetchAlerts()}
+            style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 8, border: '1px solid #fecaca', background: '#ffffff', color: '#b91c1c', cursor: 'pointer' }}
+          >
+            {isEn ? 'Retry' : 'Thử lại'}
+          </button>
+        </div>
+      )}
+
       {(isLoading || isRecalculating) && alerts.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', gap: 16 }}>
           <Loader2 style={{ width: 40, height: 40, color: '#3b82f6' }} className="animate-spin" />
           <p style={{ fontSize: 13, color: '#64748b' }}>
             {isRecalculating ? (isEn ? 'Analyzing warehouse stock...' : 'Đang phân tích tồn kho...') : (isEn ? 'Loading alerts from engine...' : 'Đang tải cảnh báo từ hệ thống...')}
           </p>
+        </div>
+      ) : alertsError && alerts.length === 0 ? (
+        <div style={{ borderRadius: 20, border: '1px solid #fecaca', background: '#ffffff' }}>
+          <ErrorState
+            title={isEn ? 'Unable to load risk alerts' : 'Không thể tải dữ liệu cảnh báo'}
+            message={alertsError}
+            onRetry={() => fetchAlerts()}
+            retryLabel={isEn ? 'Retry' : 'Thử lại'}
+          />
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ borderRadius: 20, border: '1px solid #e2e8f0', background: '#ffffff', padding: '60px 24px', textAlign: 'center' }}>

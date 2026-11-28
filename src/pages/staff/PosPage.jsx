@@ -5,11 +5,10 @@ import {
   RotateCcw, Sparkles, Tag, ChevronRight, ChevronLeft, Check, AlertCircle,
   FileText, Percent, Minus, SlidersHorizontal, Package, RefreshCw,
   Receipt, Zap, Scan, Wifi, WifiOff, Link2, Loader2, Copy, ExternalLink,
-  Smartphone, Settings, ShieldCheck, CheckCircle2
+  Smartphone, ShieldCheck, CheckCircle2
 } from 'lucide-react';
 import { useToast } from '../../components/common/Toast';
 import { useAuthStore } from '../../components/store/authStore';
-import { isOwner } from '../../config/permissions.config';
 import { useTranslation } from '../../i18n/useTranslation';
 import { formatCategoryName } from '../../components/store/productStore';
 import { useEnterSearch } from '../../hooks/useEnterSearch';
@@ -20,9 +19,7 @@ import {
   apiCheckPayosStatus,
   apiCreateMomoPayment,
   apiCheckMomoStatus,
-  apiConfirmMomoSuccess,
-  apiGetMomoConfig,
-  apiSaveMomoConfig
+  apiConfirmMomoSuccess
 } from '../../services/posService';
 import { apiClient } from '../../lib/apiClient';
 import { BrowserQRCodeSvgWriter } from '@zxing/library';
@@ -183,70 +180,6 @@ export function PosPage() {
   const momoPollRef = useRef(null);
   const momoPollInFlightRef = useRef(false);
   const momoTimerRef = useRef(null);
-
-  // ── MoMo Real Account Config State ─────────────────────────────
-  const [momoConfigModalOpen, setMomoConfigModalOpen] = useState(false);
-  const [momoConfig, setMomoConfig] = useState(null);
-  const [momoPartnerCodeInput, setMomoPartnerCodeInput] = useState('');
-  const [momoAccessKeyInput, setMomoAccessKeyInput] = useState('');
-  const [momoSecretKeyInput, setMomoSecretKeyInput] = useState('');
-  const [momoBusinessNameInput, setMomoBusinessNameInput] = useState('STOCKPILOT');
-  const [isSavingMomoConfig, setIsSavingMomoConfig] = useState(false);
-
-  const loadMomoConfig = useCallback(async () => {
-    try {
-      const cfg = await apiGetMomoConfig();
-      if (cfg) {
-        setMomoConfig(cfg);
-        setMomoPartnerCodeInput(cfg.partnerCode || '');
-        setMomoAccessKeyInput(cfg.accessKey || '');
-        setMomoSecretKeyInput(''); // Không tải khóa bí mật ra client
-        setMomoBusinessNameInput(cfg.businessName || 'STOCKPILOT');
-      }
-    } catch (e) {
-      console.warn('Lỗi tải cấu hình MoMo:', e);
-    }
-  }, []);
-
-  const canManageMomoConfig = isOwner(user?.role);
-  useEffect(() => {
-    if (canManageMomoConfig) loadMomoConfig();
-  }, [canManageMomoConfig, loadMomoConfig]);
-
-  const handleSaveMomoConfig = async (e) => {
-    e?.preventDefault();
-    if (!momoPartnerCodeInput.trim() || !momoAccessKeyInput.trim() || (!momoSecretKeyInput.trim() && !momoConfig?.hasSecretKey)) {
-      toast({ title: 'Thiếu thông tin', description: 'Vui lòng điền đủ Partner Code, Access Key và Secret Key MoMo', type: 'error' });
-      return;
-    }
-    setIsSavingMomoConfig(true);
-    try {
-      const res = await apiSaveMomoConfig({
-        partnerCode: momoPartnerCodeInput.trim(),
-        accessKey: momoAccessKeyInput.trim(),
-        secretKey: momoSecretKeyInput.trim(), // Nếu để trống thì backend tự động giữ khóa cũ
-        businessName: momoBusinessNameInput.trim() || 'STOCKPILOT',
-      });
-      setMomoConfig(res);
-      setMomoSecretKeyInput('');
-      setMomoConfigModalOpen(false);
-      toast({
-        title: 'Đã lưu cấu hình MoMo Doanh Nghiệp!',
-        description: `Mã đối tác: ${res.partnerCode} (${res.businessName})`,
-        type: 'success',
-      });
-    } catch (err) {
-      toast({
-        title: 'Lỗi lưu cấu hình',
-        description: err?.response?.data?.error?.message || err?.message || 'Không thể lưu thông tin MoMo.',
-        type: 'error',
-      });
-    } finally {
-      setIsSavingMomoConfig(false);
-    }
-  };
-
-
 
   // ── Scanner state ──────────────────────────────────────────────
   const EXPO_CLOUD_URL = 'exp://u.expo.dev/d110abc6-8b30-4959-8df7-7528b7134272/group/5ab18b87-7aa2-45e1-a302-8f76bb00f56d';
@@ -850,6 +783,15 @@ export function PosPage() {
   const discountAmount = Number(activeTab.discount || 0);
   const totalPayable = Math.max(0, subtotalAmount - discountAmount);
 
+  const hasCustomPrices = useMemo(() => activeTab.items.some((item) => {
+    const product = products.find((p) =>
+      p.stockItems?.some((si) => si.id === item.stockItemId) || p.id === item.productId
+    );
+    const stockItem = product?.stockItems?.find((si) => si.id === item.stockItemId);
+    const catalogPrice = safeNum(stockItem?.sellingPrice ?? product?.sellingPrice ?? product?.salePrice);
+    return catalogPrice > 0 && safeNum(item.price) !== catalogPrice;
+  }), [activeTab.items, products]);
+
   useEffect(() => {
     if (isCheckoutOpen) setAmountGiven(String(totalPayable));
   }, [isCheckoutOpen, totalPayable]);
@@ -1012,17 +954,19 @@ export function PosPage() {
       return;
     }
 
+    if (paymentMethod !== 'CASH' && hasCustomPrices) {
+      toast({
+        title: isEn ? 'Custom prices require cash payment' : 'Giá chỉnh riêng chỉ áp dụng cho tiền mặt',
+        description: isEn
+          ? 'PayOS and MoMo use the product price configured in the system. Reset the custom price before using QR payment.'
+          : 'PayOS và MoMo sử dụng giá niêm yết trên hệ thống. Vui lòng khôi phục giá sản phẩm trước khi thanh toán QR.',
+        type: 'warning',
+      });
+      return;
+    }
+
     // ── XỬ LÝ THANH TOÁN VÍ ĐIỆN TỬ MOMO TỰ ĐỘNG NHẬN DIỆN ──
     if (paymentMethod === 'MOMO') {
-      if (!momoConfig?.isConfigured) {
-        toast({
-          title: 'MoMo chưa cấu hình',
-          description: 'Cửa hàng chưa cấu hình cổng thanh toán MoMo. Vui lòng thiết lập khóa kết nối trước khi thanh toán.',
-          type: 'error',
-        });
-        setMomoConfigModalOpen(true);
-        return;
-      }
       setIsProcessing(true);
       try {
         const payload = {
@@ -1035,8 +979,6 @@ export function PosPage() {
           items: activeTab.items.map((it) => ({
             stockItemId: it.stockItemId,
             quantity: it.quantity,
-            price: it.price,
-            unitPrice: it.price,
           })),
         };
 
@@ -1115,7 +1057,7 @@ export function PosPage() {
       } catch (err) {
         toast({
           title: 'Chưa thể tạo mã QR MoMo',
-          description: err?.response?.data?.error?.message || err?.message || 'Lỗi kết nối cổng MoMo.',
+          description: err?.response?.data?.error?.message || err?.message || 'MoMo chưa được cấu hình trên máy chủ. Vui lòng liên hệ quản trị hệ thống.',
           type: 'error',
         });
       } finally {
@@ -1138,8 +1080,6 @@ export function PosPage() {
           items: activeTab.items.map((it) => ({
             stockItemId: it.stockItemId,
             quantity: it.quantity,
-            price: it.price,
-            unitPrice: it.price,
           })),
         };
 
@@ -1250,6 +1190,7 @@ export function PosPage() {
         items: activeTab.items.map((it) => ({
           stockItemId: Number(it.stockItemId),
           quantity: Number(it.quantity) || 1,
+          price: Number(it.price) || 0,
         })),
       };
       const res = await apiCreatePosSale(payload);
@@ -2015,39 +1956,35 @@ export function PosPage() {
               {/* Payment methods */}
               <div className="space-y-1.5 pt-0.5">
                 <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500 block">{language === 'en' ? 'Payment Method' : 'Phương thức thanh toán'}</span>
+                {hasCustomPrices && (
+                  <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                    {language === 'en'
+                      ? 'A custom unit price is active. QR payments use catalog prices; choose Cash or restore the listed price.'
+                      : 'Đang có giá chỉnh riêng. Thanh toán QR dùng giá niêm yết; hãy chọn tiền mặt hoặc khôi phục giá gốc.'}
+                  </p>
+                )}
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
                     { id: 'CASH', label: language === 'en' ? 'Cash' : 'Tiền mặt', icon: Banknote },
                     { id: 'BANK_TRANSFER', label: 'VietQR PayOS', icon: QrCode },
-                    { id: 'MOMO', label: language === 'en' ? 'MoMo Wallet' : 'Ví MoMo', icon: Smartphone },
                   ].map((m) => {
                     const Icon = m.icon;
                     const isSelected = paymentMethod === m.id;
-                    const isMomo = m.id === 'MOMO';
                     return (
                       <button
                         key={m.id}
                         onClick={() => setPaymentMethod(m.id)}
+                        disabled={m.id !== 'CASH' && hasCustomPrices}
+                        title={m.id !== 'CASH' && hasCustomPrices
+                          ? (isEn ? 'Reset custom prices to use QR payment' : 'Khôi phục giá niêm yết để dùng thanh toán QR')
+                          : undefined}
                         className={`relative py-2 px-1 rounded-xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
                           isSelected
                             ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
                             : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                        }`}
+                        } disabled:opacity-40 disabled:cursor-not-allowed`}
                         style={isSelected ? { boxShadow: '0 0 0 2px rgb(59 130 246 / 0.2)' } : {}}
                       >
-                        {isMomo && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMomoConfigModalOpen(true);
-                            }}
-                            className="absolute top-1 right-1 p-0.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-100/60 transition-colors cursor-pointer"
-                            title="Cấu hình tài khoản MoMo"
-                          >
-                            <Settings className="w-3 h-3" />
-                          </button>
-                        )}
                         <Icon className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
                         <span className="text-center leading-tight">
                           {m.label}
@@ -2906,133 +2843,6 @@ export function PosPage() {
         </div>
       )}
 
-      {/* ── MoMo Enterprise Setup Modal ─────────────────── */}
-      {momoConfigModalOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            <div
-              className="px-6 py-4 flex items-center justify-between text-white"
-              style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
-                  <Smartphone className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-white text-base">Cấu hình Cổng MoMo Doanh Nghiệp</h3>
-                  <p className="text-xs text-slate-300">Kết nối trực tiếp MoMo Gateway Production</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMomoConfigModalOpen(false)}
-                className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveMomoConfig} autoComplete="off" className="p-6 space-y-3.5">
-              {!momoConfig?.isConfigured && (
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs leading-relaxed">
-                  ⚠️ <strong>Chưa cấu hình MoMo:</strong> Cửa hàng chưa lưu thông tin kết nối. Vui lòng nhập Partner Code, Access Key và Secret Key từ hợp đồng MoMo Doanh Nghiệp để bật tính năng này.
-                </div>
-              )}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Mã đối tác (Partner Code) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="momoPartnerCode"
-                  autoComplete="off"
-                  value={momoPartnerCodeInput}
-                  onChange={(e) => setMomoPartnerCodeInput(e.target.value)}
-                  placeholder="MOMOVA0I20261015"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 bg-white placeholder:text-slate-900 focus:outline-none focus:border-slate-800 focus:ring-2 focus:ring-slate-900/10"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Access Key <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="momoAccessKey"
-                  autoComplete="new-password"
-                  value={momoAccessKeyInput}
-                  onChange={(e) => setMomoAccessKeyInput(e.target.value)}
-                  placeholder="sjqZwImFcjxZBhHF"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 bg-white placeholder:text-slate-900 focus:outline-none focus:border-slate-800 focus:ring-2 focus:ring-slate-900/10"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Secret Key {!momoConfig?.hasSecretKey && <span className="text-red-500">*</span>}
-                  {momoConfig?.hasSecretKey && (
-                    <span className="text-[10px] text-emerald-600 font-normal ml-1.5">(Đã lưu khóa bí mật an toàn)</span>
-                  )}
-                </label>
-                <input
-                  type="password"
-                  name="momoSecretKey"
-                  autoComplete="new-password"
-                  value={momoSecretKeyInput}
-                  onChange={(e) => setMomoSecretKeyInput(e.target.value)}
-                  placeholder={momoConfig?.hasSecretKey ? '•••••••••••••••• (Để trống để giữ nguyên khóa cũ)' : '••••••••••••••••'}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 bg-white placeholder:text-slate-900 focus:outline-none focus:border-slate-800 focus:ring-2 focus:ring-slate-900/10"
-                  required={!momoConfig?.hasSecretKey}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Tên Doanh nghiệp / Cửa hàng
-                </label>
-                <input
-                  type="text"
-                  name="momoBusinessName"
-                  autoComplete="off"
-                  value={momoBusinessNameInput}
-                  onChange={(e) => setMomoBusinessNameInput(e.target.value.toUpperCase())}
-                  placeholder="STOCKPILOT"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold uppercase text-slate-900 bg-white placeholder:text-slate-900 focus:outline-none focus:border-slate-800 focus:ring-2 focus:ring-slate-900/10"
-                />
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 space-y-1">
-                <p className="font-bold flex items-center gap-1.5 text-slate-900">
-                  <Sparkles className="w-3.5 h-3.5 text-slate-900" /> Cổng MoMo Doanh Nghiệp Thật:
-                </p>
-                <p className="leading-relaxed">
-                  Đã kết nối với Cổng thanh toán <strong>payment.momo.vn</strong> theo hợp đồng doanh nghiệp đã duyệt. Toàn bộ tiền thanh toán sẽ chuyển trực tiếp vào tài khoản ngân hàng của doanh nghiệp.
-                </p>
-              </div>
-
-              <div className="flex gap-2.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setMomoConfigModalOpen(false)}
-                  className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all cursor-pointer"
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingMomoConfig}
-                  className="flex-1 py-2 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs shadow-md shadow-slate-900/25 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {isSavingMomoConfig ? 'Đang lưu...' : 'Lưu cấu hình Doanh Nghiệp'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

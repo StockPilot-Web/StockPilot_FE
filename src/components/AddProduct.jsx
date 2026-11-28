@@ -155,7 +155,7 @@ export function AddProduct({ onBack }) {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
-  const handleImageFile = async (file) => {
+  const handleImageFile = (file) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       setUploadError(isEn ? "Invalid file type. Please choose a JPG, PNG, WEBP, GIF or AVIF image." : "File không hợp lệ. Vui lòng chọn ảnh JPG, PNG, WEBP, GIF hoặc AVIF.");
@@ -166,24 +166,13 @@ export function AddProduct({ onBack }) {
       return;
     }
     setImageFile(file);
+    setUploadedUrl(null);
     setUploadError(null);
 
-    // Hiển thị preview tức thì
+    // Hiển thị preview tức thì; chỉ tải lên Cloudinary khi người dùng ấn Lưu sản phẩm
     const reader = new FileReader();
     reader.onload = (e) => setImagePreview(e.target.result);
     reader.readAsDataURL(file);
-
-    // Tải ảnh lên Cloudinary
-    setIsUploading(true);
-    try {
-      const url = await uploadImageToCloudinary(file);
-      setUploadedUrl(url);
-    } catch (err) {
-      console.warn("Lỗi upload Cloudinary:", err);
-      setUploadError(err?.message || "Không thể tải ảnh lên Cloudinary");
-    } finally {
-      setIsUploading(false);
-    }
   };
 
   const handleDrop = (e) => {
@@ -262,7 +251,7 @@ export function AddProduct({ onBack }) {
           finalImageUrl = await uploadImageToCloudinary(imageFile);
           setUploadedUrl(finalImageUrl);
         } catch (uploadErr) {
-          throw new Error(`Upload ảnh lên Cloudinary thất bại: ${uploadErr.message}`);
+          throw new Error(`Tải ảnh lên thất bại: ${uploadErr.message}`);
         } finally {
           setIsUploading(false);
         }
@@ -783,13 +772,13 @@ export function AddProduct({ onBack }) {
                   {isUploading && (
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white p-4 text-center">
                       <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-                      <span className="text-xs font-bold">{isEn ? "Uploading to Cloudinary..." : "Đang tải ảnh lên Cloudinary..."}</span>
+                      <span className="text-xs font-bold">{isEn ? "Uploading image..." : "Đang tải ảnh..."}</span>
                     </div>
                   )}
 
                   {!isUploading && uploadedUrl && (
                     <div className="absolute top-2 left-2 bg-emerald-600/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-xs flex items-center gap-1 shadow-xs">
-                      <CheckCircle2 className="w-3 h-3" /> {isEn ? "Saved to Cloudinary" : "Đã lưu Cloudinary"}
+                      <CheckCircle2 className="w-3 h-3" /> {isEn ? "Saved" : "Đã lưu"}
                     </div>
                   )}
 
