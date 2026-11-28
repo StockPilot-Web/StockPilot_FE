@@ -1967,7 +1967,6 @@ export function PosPage() {
                   {[
                     { id: 'CASH', label: language === 'en' ? 'Cash' : 'Tiền mặt', icon: Banknote },
                     { id: 'BANK_TRANSFER', label: 'VietQR PayOS', icon: QrCode },
-                    { id: 'MOMO', label: language === 'en' ? 'MoMo Wallet' : 'Ví MoMo', icon: Smartphone },
                   ].map((m) => {
                     const Icon = m.icon;
                     const isSelected = paymentMethod === m.id;
