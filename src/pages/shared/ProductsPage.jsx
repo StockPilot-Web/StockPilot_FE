@@ -1182,7 +1182,7 @@ export function ProductsPage() {
     fetchProducts();
 
     const handleSync = () => {
-      fetchProducts();
+      fetchProducts({ force: true });
     };
     window.addEventListener('stockpilot_product_updated', handleSync);
 
@@ -1191,7 +1191,7 @@ export function ProductsPage() {
       bc = new BroadcastChannel('stockpilot_channel');
       bc.onmessage = (event) => {
         if (event.data?.type === 'PRODUCTS_UPDATED') {
-          fetchProducts();
+          fetchProducts({ force: true });
         }
       };
     } catch (_) {}

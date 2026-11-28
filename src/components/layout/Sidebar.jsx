@@ -96,7 +96,7 @@ export function Sidebar() {
   }, [currentRole]);
   useEffect(() => {
     loadAttention();
-  }, [loadAttention, location.pathname]);
+  }, [loadAttention]);
   usePolling(loadAttention, 30000, Boolean(currentRole));
 
   const openAlertsCount = getOpenCount();

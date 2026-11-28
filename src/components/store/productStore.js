@@ -75,6 +75,20 @@ export function formatCategoryName(nameOrValue, isEn) {
 
 export const UNITS = ['Cái', 'Hộp', 'Chai', 'Túi', 'Kg', 'Gói', 'Thùng', 'Lọ', 'Cuộn', 'Đôi', 'Bộ', 'Tờ'];
 
+const PRODUCT_CACHE_TTL_MS = 60_000;
+let productsRequest = null;
+let productsRequestKey = null;
+
+function getProductCacheKey() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('stockpilot-auth') || '{}');
+    const state = stored.state || stored;
+    return String(state.user?.storeId || state.user?.store?.id || state.user?.id || state.token || 'anonymous');
+  } catch (_) {
+    return 'anonymous';
+  }
+}
+
 function safeNum(val) {
   if (val === null || val === undefined) return 0;
   if (typeof val === 'number') return isNaN(val) ? 0 : val;
@@ -141,12 +155,27 @@ export const useProductStore = create((set, get) => ({
   isLoading: false,
   error: null,
   pagination: { page: 1, limit: 500, total: 0 },
+  lastFetchedAt: 0,
+  cacheKey: null,
 
   // ─── Load sản phẩm từ API ───
   fetchProducts: async (params = {}) => {
-    set({ isLoading: true, error: null });
+    const { force = false, ...requestParams } = params;
+    const cacheKey = getProductCacheKey();
+    let state = get();
+    if (state.cacheKey !== cacheKey) {
+      set({ products: [], lastFetchedAt: 0, cacheKey });
+      state = get();
+    }
+    const hasFreshCache = state.products.length > 0 && (Date.now() - state.lastFetchedAt) < PRODUCT_CACHE_TTL_MS;
+    if (!force && hasFreshCache) return state.products;
+    if (productsRequest && productsRequestKey === cacheKey) return productsRequest;
+
+    set({ isLoading: state.products.length === 0, error: null });
+    productsRequestKey = cacheKey;
+    productsRequest = (async () => {
     try {
-      const data = await apiGetProducts({ page: 1, limit: 500, ...params });
+      const data = await apiGetProducts({ page: 1, limit: 500, ...requestParams });
       const rawItems = Array.isArray(data) ? data : (data.items || data.data || []);
       const items = rawItems.map(normalizeProduct).filter(Boolean);
       // Sort products ascending from 1 onwards (SP1, SP2, SP3...)
@@ -158,11 +187,20 @@ export const useProductStore = create((set, get) => ({
       set({
         products: items,
         isLoading: false,
+        lastFetchedAt: Date.now(),
+        cacheKey,
         pagination: { total: data.total || items.length, page: data.page || 1, limit: data.limit || 500 }
       });
+      return items;
     } catch (err) {
       set({ error: err?.response?.data?.error?.message || 'Lỗi tải sản phẩm', isLoading: false });
+      return get().products;
+    } finally {
+      productsRequest = null;
+      productsRequestKey = null;
     }
+    })();
+    return productsRequest;
   },
 
   // ─── Load categories từ API ───

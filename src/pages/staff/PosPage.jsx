@@ -26,6 +26,22 @@ import { BrowserQRCodeSvgWriter } from '@zxing/library';
 import { docSoThanhChu } from '../../utils/numberToWordsVN';
 import { ReceiptPrintContent, ReceiptPrintPortal } from '../../components/pos/ReceiptPrintView';
 
+const POS_PRODUCTS_CACHE_TTL_MS = 60_000;
+let posProductsCache = [];
+let posProductsFetchedAt = 0;
+let posProductsRequest = null;
+let posProductsCacheKey = null;
+
+function getPosProductsCacheKey() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('stockpilot-auth') || '{}');
+    const state = stored.state || stored;
+    return String(state.user?.storeId || state.user?.store?.id || state.user?.id || state.token || 'anonymous');
+  } catch (_) {
+    return 'anonymous';
+  }
+}
+
 
 function buildPairingQrPayload(code) {
   const baseUrl = apiClient.defaults?.baseURL || '';
@@ -501,8 +517,29 @@ export function PosPage() {
     };
   }, [openSseStream]);
 
-  const loadProducts = async () => {
-    setIsLoadingProducts(true);
+  const loadProducts = async ({ force = false } = {}) => {
+    const cacheKey = getPosProductsCacheKey();
+    if (posProductsCacheKey !== cacheKey) {
+      posProductsCache = [];
+      posProductsFetchedAt = 0;
+      posProductsCacheKey = cacheKey;
+    }
+    const hasFreshCache = posProductsCache.length > 0 && (Date.now() - posProductsFetchedAt) < POS_PRODUCTS_CACHE_TTL_MS;
+    if (!force && hasFreshCache) {
+      setProducts(posProductsCache);
+      setIsLoadingProducts(false);
+      return posProductsCache;
+    }
+    if (posProductsRequest) {
+      const cachedResult = await posProductsRequest;
+      if (cachedResult?.length) setProducts(cachedResult);
+      setIsLoadingProducts(false);
+      return cachedResult;
+    }
+
+    // Khi refresh, giữ danh sách hiện tại để tránh màn hình trắng/giật.
+    setIsLoadingProducts(products.length === 0);
+    posProductsRequest = (async () => {
     try {
       try { localStorage.removeItem('stockpilot_overrides'); } catch (_) {}
       const data = await apiGetPosProducts();
@@ -527,13 +564,20 @@ export function PosPage() {
         const numB = parseInt(String(b.code || b.id).replace(/\D/g, ''), 10) || Number(b.id) || 0;
         return numA - numB;
       });
+      posProductsCache = mapped;
+      posProductsFetchedAt = Date.now();
       setProducts(mapped);
+      return mapped;
     } catch (err) {
       console.warn('Lỗi tải sản phẩm:', err?.message);
-      setProducts([]);
+      if (products.length === 0) setProducts([]);
+      return products;
     } finally {
+      posProductsRequest = null;
       setIsLoadingProducts(false);
     }
+    })();
+    return posProductsRequest;
   };
 
   useEffect(() => {
@@ -541,7 +585,7 @@ export function PosPage() {
 
     // Tự động đồng bộ ngay khi trang Sản phẩm cập nhật (cùng cửa sổ hoặc khác tab)
     const handleSync = () => {
-      loadProducts();
+      loadProducts({ force: true });
     };
     window.addEventListener('stockpilot_product_updated', handleSync);
 
@@ -550,7 +594,7 @@ export function PosPage() {
       bc = new BroadcastChannel('stockpilot_channel');
       bc.onmessage = (event) => {
         if (event.data?.type === 'PRODUCTS_UPDATED') {
-          loadProducts();
+          loadProducts({ force: true });
         }
       };
     } catch (_) {}
@@ -1602,7 +1646,7 @@ export function PosPage() {
             )}
           </div>
           <button
-            onClick={loadProducts}
+            onClick={() => loadProducts({ force: true })}
             disabled={isLoadingProducts}
             aria-label={isEn ? 'Refresh products' : 'Tải lại sản phẩm'}
             className="p-2 rounded-lg border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-all disabled:opacity-40"
